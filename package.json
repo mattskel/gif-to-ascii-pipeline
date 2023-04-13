@@ -1,0 +1,16 @@
+{
+  "name": "gif-to-ascii-pipeline",
+  "version": "1.0.0",
+  "description": "Convert gif file to ascii characters using a node pipeline",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "https": "^1.0.0",
+    "stream": "0.0.2"
+  },
+	"type": "module"
+}
