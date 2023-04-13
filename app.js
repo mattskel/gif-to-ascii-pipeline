@@ -117,6 +117,12 @@ class _ForkTransform extends Transform {
           let N = this.codeSize
           codeSizes.push(N);
 
+          // this.subBlockLength = buffer[index++];
+        }
+
+        if (this.previousTail.length > 0) {
+          this.previousTail = Buffer.alloc(0);
+        } else {
           this.subBlockLength = buffer[index++];
         }
 
@@ -131,20 +137,26 @@ class _ForkTransform extends Transform {
           // this.push(data);
           this.blocks.push(data);
           index += this.subBlockLength;
+          if (index >= buffer.length) {
+            break;
+          }
+
           this.subBlockLength = buffer[index++];
         }
 
-        // this.previousTail = buffer.slice(index);
-        const _buffer = Buffer.concat(this.blocks);
-        // this.count++;
-        // if (this.count === 19) {
-        //   console.log('here');
-        // }
-        this.push(_buffer);
-        // callback();
-        this.subBlockLength = undefined;
-        this.blocks = [];
-        this.identifier = buffer[index++];
+        if (this.subBlockLength === 0) {
+          // this.previousTail = buffer.slice(index);
+          const _buffer = Buffer.concat(this.blocks);
+          // this.count++;
+          // if (this.count === 19) {
+          //   console.log('here');
+          // }
+          this.push(_buffer);
+          // callback();
+          this.subBlockLength = undefined;
+          this.blocks = [];
+          this.identifier = buffer[index++];
+        }
       }
     }
 
@@ -623,8 +635,8 @@ class PulseTransform extends Transform {
 
 
 
-get('https://media.giphy.com/media/8YNxrDHjOFE7qZKXS5/giphy.gif', (res) => {
-// get('https://media.giphy.com/media/3o7527pa7qs9kCG78A/giphy.gif', (res) => {
+// get('https://media.giphy.com/media/8YNxrDHjOFE7qZKXS5/giphy.gif', (res) => {
+get('https://media.giphy.com/media/3o7527pa7qs9kCG78A/giphy.gif', (res) => {
   const stream = res  
     .pipe(new GIFTransform())
     // .pipe(new ForkTransform())
