@@ -1,12 +1,11 @@
 import {get} from 'https';
-import { createReadStream } from 'fs';
-import { PassThrough, Transform } from 'stream';
+import http from 'http';
+import express from 'express';
+import path from 'path';
+import {Server} from 'socket.io';
+import { Transform } from 'stream';
 
-// Create a new class that extends the Transform class called FindFrameEnd
-
-const headerBytes = 13;
-
-const asciiScale = ' .-:_,^=;><+!rc*/z?sLTv)J7(|Fi{C}fI31tlu[neoZ5Yxjya]2ESwqkP6h9d4VpOGbUAKXHm8RD#$Bg0MNWQ%&@'
+const asciiScale = ' .,:ilwW'
 let currentCodeSize;
 let globalColorTable;
 let _gifWidth;
@@ -18,8 +17,6 @@ const heightCompression = 10;
 let rowReturn;
 let gifBackground;
 let frames = [];
-// const clear_codes = [];
-// const eoi_codes = [];
 let buffer;
 const codeSizes = [];
 
@@ -28,7 +25,6 @@ class _ForkTransform extends Transform {
   constructor(options) {
     super(options);
     this.previousTail = Buffer.alloc(0);
-    // this.isLWZImage = false;
     this.identifier;
     this.subType;
     this.frame = {index: 0};
@@ -49,6 +45,7 @@ class _ForkTransform extends Transform {
 
       /// EOF
       if (this.identifier === 0x3b) {
+        callback();
         return;
       }
 
@@ -116,8 +113,6 @@ class _ForkTransform extends Transform {
           this.codeSize = buffer[index++];
           let N = this.codeSize
           codeSizes.push(N);
-
-          // this.subBlockLength = buffer[index++];
         }
 
         if (this.previousTail.length > 0) {
@@ -134,7 +129,6 @@ class _ForkTransform extends Transform {
           }
 
           const data = buffer.slice(index, index + this.subBlockLength);
-          // this.push(data);
           this.blocks.push(data);
           index += this.subBlockLength;
           if (index >= buffer.length) {
@@ -145,14 +139,8 @@ class _ForkTransform extends Transform {
         }
 
         if (this.subBlockLength === 0) {
-          // this.previousTail = buffer.slice(index);
           const _buffer = Buffer.concat(this.blocks);
-          // this.count++;
-          // if (this.count === 19) {
-          //   console.log('here');
-          // }
           this.push(_buffer);
-          // callback();
           this.subBlockLength = undefined;
           this.blocks = [];
           this.identifier = buffer[index++];
@@ -162,23 +150,15 @@ class _ForkTransform extends Transform {
 
     callback();
 
-    // this.previousTail = buffer.slice(index);
-    // this.identifier = undefined;
-
   }
 }
 
 class __ForkTransform extends Transform {
   constructor(options) {
     super(options);
-    
-
-    // this.N = codeSizes.shift();
-    this.transformCount = 0;
   }
 
   _transform(chunk, encoding, callback) {
-    this.transformCount++;
     const subBlockLength = chunk.length;
     const indexStream = [];
     const N = codeSizes.shift();
@@ -244,167 +224,14 @@ class __ForkTransform extends Transform {
         }
       }
 
-      // index += subBlockLength;
-      // subBlockLength = buffer[index++];
       this.push(Buffer.from(indexStream));
       callback();
-      // this.indexStream = [];
-      // this.binString = '';
     } else {
       // reached the end of the frame
       callback();
     }
   }
 }
-
-class ForkTransform extends Transform {
-  constructor(options) {
-    super(options);
-    this.bufs = [];
-  }
-
-  _transform(chunk, encoding, callback) {
-    this.bufs.push(chunk);
-    this.frames = 0;
-    callback();
-  }
-
-  _flush(callback) {
-    const buffer = Buffer.concat(this.bufs);
-    let index = 0;
-    let binString;
-    let subBlockLength = 0;
-    let next_code;
-    let code_table;
-    let prev_code; // {CODE-1}
-    let k;
-    let indexStream;
-    let N
-    let clear_code
-    let eoi_code
-    let currentCodeSize
-    let code;
-
-
-    while (subBlockLength !== undefined) {
-      if (buffer[index] === 0x3b) {
-        break;
-      }
-
-
-      if (subBlockLength === 0) {
-        let imageDescriptor = buffer[index++];
-        while (imageDescriptor === 0x21) {
-          const metadataBlockSubType = buffer[index++];
-          if (metadataBlockSubType === 0xf9) {
-            if (buffer[index++] !== 0x04) {
-              throw new Error('Invalid metadata block');
-            }
-
-            const controlOptions = buffer[index++];
-            const delayTime = buffer[index++] | (buffer[index++] << 8);
-            delayTimes.push(delayTime);
-            const transparentColorIndex = buffer[index++];
-            const terminator = buffer[index++];
-            if (terminator !== 0x00) {
-              throw new Error('Invalid metadata block');
-            }
-            imageDescriptor = buffer[index++];
-          }
-        }
-
-
-        if (imageDescriptor === 0x2c) {
-          this.frames++;
-          binString = '';
-
-          // Initialise the index stream
-          indexStream = [];
-
-          const left = buffer[index++] | (buffer[index++] << 8);
-          const top = buffer[index++] | (buffer[index++] << 8);
-          const width = buffer[index++] | (buffer[index++] << 8);
-          const height = buffer[index++] | (buffer[index++] << 8);
-          imagePositions.push({left, top, width, height});
-          const localColorTableInfo = buffer[index++];
-          N = buffer[index++]; // Expect this to initialise to 8
-          clear_code = 2 ** N; // initialise next_code to 257
-          eoi_code = 2 ** N + 1; 
-          currentCodeSize = N + 1;
-
-          subBlockLength = buffer[index++];
-          prev_code = undefined
-        }
-      }
-
-      while (subBlockLength !== 0) {
-        const subBlock = buffer.slice(index, index + subBlockLength);
-        let subIndex = 0;
-        while (subIndex < subBlockLength) {
-          binString = subBlock[subIndex++].toString(2).padStart(8, '0') + binString;
-          if (binString.length >= currentCodeSize) {
-            let _tmp = binString.slice(-currentCodeSize);
-            code = parseInt(_tmp, 2);
-            binString = binString.slice(0, -currentCodeSize);
-
-            if (code === clear_code) {
-              // Initialise the code table
-              code_table = new Array(4096);
-              for (let i = 0; i < clear_code; i++) {
-                code_table[i] = [i];
-              }
-              next_code = eoi_code + 1;
-              k = undefined;
-              code_table[code] = [];
-              currentCodeSize = N + 1;
-              prev_code = undefined;
-              continue;
-            } else if (code === eoi_code) {
-              break;
-            } else if (code_table[code] !== undefined) {
-              // output goes here
-              indexStream.push(...code_table[code]);
-              k = code_table[code][0];
-              if (prev_code === undefined) {
-                prev_code = code;
-                continue;
-              }
-            } else {
-              k = code_table[prev_code][0];
-              indexStream.push(...code_table[prev_code], k);
-            }
-
-            if (code_table[prev_code] === undefined) {
-              throw new Error('Something went wrong');
-            }
-
-            if (next_code === 2 ** currentCodeSize - 1 && currentCodeSize < 12) {
-              currentCodeSize++;
-            }
-
-            if (next_code < 4096) {
-              code_table[next_code++] = [...code_table[prev_code], k];
-              prev_code = code;
-            }
-          }
-        }
-
-        index += subBlockLength;
-        subBlockLength = buffer[index++];
-      }
-
-      this.push(Buffer.from(indexStream));
-    }
-  }
-}
-
-class HeaderTransform extends Transform {
-  constructor(options) {
-    super(options);
-    this.header = Buffer.alloc(13);
-  }
-}
-
 
 // A class that transforms byte array into gif
 class GIFTransform extends Transform {
@@ -437,14 +264,6 @@ class GIFTransform extends Transform {
       _byte += bit;
     }
     const colorTableBits = colorTableInfo[0].toString(2).padStart(8, '0')
-
-    // Parse _byte
-    // Starting from the most significant bit
-    // 1st bit: Global Color Table Flag
-    // 2nd to 4th bit: Color Resolution
-    // 5th bit: Sort Flag
-    // 6th to 8th bit: Size of Global Color Table
-
     const globalColorTableFlag = _byte[0];
     const colorResolution = _byte.slice(1, 4);
     const sortFlag = _byte[4];
@@ -511,8 +330,6 @@ class GIFTransform extends Transform {
       this.push(chunk.slice(graphicControlExtensionStart));
       callback();
       return;
-
-
     }
     callback();
   }
@@ -619,13 +436,15 @@ class AsciiTransform extends Transform {
 class PulseTransform extends Transform {
   constructor(options) {
     super(options);
+    this.frames = []
   }
 
   _transform(chunk, encoding, callback) {
     this.push(chunk);
-    this.push(`\u001b[${rowReturn - 1}A`)
-    this.push('\r');
+    // this.push(`\u001b[${rowReturn - 1}A`)
+    // this.push('\r');
     const delay = delayTimes.shift();
+    frames.push({chunk, delay})
     setTimeout(() => {
       callback();
     }, delay * 10);
@@ -633,30 +452,172 @@ class PulseTransform extends Transform {
 
 }
 
+function _tmp(chunk, encoding, push, callback) {
+  
+  const subBlockLength = chunk.length;
+  const indexStream = [];
+  const N = codeSizes.shift();
+  const clear_code = 2 ** N;
+  const eoi_code = 2 ** N + 1;
 
+  let currentCodeSize = N + 1;
+  let binString = '';
+  let code_table;
+  let code;
+  let prev_code;
+  let next_code;
+  let k;
+  if (subBlockLength !== 0) {
+    const subBlock = chunk;
+    let subIndex = 0;
+    while (subIndex < subBlockLength) {
+      binString = subBlock[subIndex++].toString(2).padStart(8, '0') + binString;
+      if (binString.length >= currentCodeSize) {
+        let _tmp = binString.slice(-currentCodeSize);
+        code = parseInt(_tmp, 2);
+        binString = binString.slice(0, -currentCodeSize);
+
+        if ( code === clear_code) {
+          // Initialise the code table
+          code_table = new Array(4096);
+          for (let i = 0; i < clear_code; i++) {
+            code_table[i] = [i];
+          }
+          next_code = eoi_code + 1;
+          k = undefined;
+          code_table[ code] = [];
+          currentCodeSize = N + 1;
+          prev_code = undefined;
+          continue;
+        } else if ( code === eoi_code) {
+          break;
+        } else if (code_table[code] !== undefined) {
+          // output goes here
+          indexStream.push(...code_table[code]);
+          k = code_table[code][0];
+          if (prev_code === undefined) {
+            prev_code =  code;
+            continue;
+          }
+        } else {
+          k = code_table[prev_code][0];
+          indexStream.push(...code_table[prev_code], k);
+        }
+
+        if (code_table[prev_code] === undefined) {
+          throw new Error('Something went wrong');
+        }
+
+        if (next_code === 2 ** currentCodeSize - 1 && currentCodeSize < 12) {
+          currentCodeSize++;
+        }
+
+        if (next_code < 4096) {
+          code_table[next_code++] = [...code_table[prev_code], k];
+          prev_code = code;
+        }
+      }
+    }
+
+    push(Buffer.from(indexStream));
+    return callback();
+  } else {
+    // reached the end of the frame
+    callback();
+  }
+}
+
+class ParralelTransform extends Transform {
+  constructor(_tmp, options) {
+    super(options);
+    this._tmp = _tmp;
+    this.running = 0;
+    this.terminateCallback = null;
+  }
+
+  _transform(chunk, encoding, callback) {
+    this.running++;
+    setTimeout(() => {
+      _tmp(chunk, encoding, this.push.bind(this), this._onComplete.bind(this));
+    });
+    callback();
+  }
+
+  _flush(callback) {
+    if (this.running > 0) {
+      this.terminateCallback = callback;
+    } else {
+      callback();
+    }
+  }
+
+  _onComplete(err) {
+    this.running--;
+    if (err) {
+      this.emit('error', err);
+    }
+    if (this.running === 0) {
+      this.terminateCallback && this.terminateCallback();
+    }
+  }
+}
+
+const app = express();
+const __dirname = path.resolve();
+const server = http.createServer(app);
+const io = new Server(server);
 
 // get('https://media.giphy.com/media/8YNxrDHjOFE7qZKXS5/giphy.gif', (res) => {
 get('https://media.giphy.com/media/3o7527pa7qs9kCG78A/giphy.gif', (res) => {
   const stream = res  
     .pipe(new GIFTransform())
-    // .pipe(new ForkTransform())
     .pipe(new _ForkTransform())
     .pipe(new __ForkTransform())
+    // .pipe(new ParralelTransform(_tmp))
     .pipe(new FooTransform())
     .pipe(new FrameTransform())
     .pipe(new BarTransform())
     .pipe(new AsciiTransform())
     .pipe(new PulseTransform())
-    .pipe(process.stdout)
-    // .on('data', (data) => process.stdout.write(`Downloading... `))
-    .on('error', (err) => {
-      if (err) {
-        console.log(err)
+    .on('data', async (data) => {
+      io.emit('frame', data.toString());
+    })
+    // .pipe(process.stdout)
+    // .on('error', (err) => {
+    //   if (err) {
+    //     console.log(err)
+    //   }
+    // })
+    .on('finish', async () => {
+      console.log('done');
+      let i = 0;
+      while (i < frames.length) {
+        const {chunk, delay} = frames[i];
+        await new Promise((resolve) => {
+          io.emit('frame', chunk.toString());
+          setTimeout(resolve, delay * 10);
+        });
+
+        i = (i + 1) % frames.length;
       }
     })
+
+  res.on('end', () => {
+    console.log('response finished');
+  });  
 })
   .on('error', (err) => {
     if (err) {
       console.log(err);
     }
   })
+
+
+
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/index.html');
+});
+
+server.listen(3000, () => {
+  console.log('listening on *:3000');
+});

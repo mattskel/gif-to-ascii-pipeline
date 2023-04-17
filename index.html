@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <style>
+      body {
+        font-family: "Courier New", Courier, monospace;
+        white-space: pre-wrap;
+        background: black;
+        color: white;
+        font-size: 0.5em;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="whereTheTextGoes"></div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      var socket = io();
+      var textArea = document.getElementById('whereTheTextGoes');
+
+      socket.on('frame', (frame) => {
+        textArea.innerHTML = frame;
+      });
+    </script>
+  </body>
+</html>
