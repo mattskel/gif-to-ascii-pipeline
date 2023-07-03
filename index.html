@@ -18,14 +18,20 @@
         <input type="text" name="searchTerm" autocomplete="off" /><button>Send</button>
       </form>  
       <div id="whereTheTextGoes"></div>
+      <img id="image" src="" alt="PNG Image">
     </div>
     <script src="/socket.io/socket.io.js"></script>
     <script>
       var socket = io();
       var textArea = document.getElementById('whereTheTextGoes');
+      var imgElement = document.getElementById('image');
 
       socket.on('frame', (frame) => {
         textArea.innerHTML = frame;
+      });
+
+      socket.on('colorFrame', (url) => {
+        imgElement.src = url;
       });
     </script>
   </body>

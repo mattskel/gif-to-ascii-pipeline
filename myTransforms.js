@@ -1,4 +1,5 @@
 import { Transform } from 'stream';
+import { createCanvas } from 'canvas';
 
 // const asciiScale = ' .,:ilwW'
 const asciiScale = ' .,:;irsXA253hMHGS#9B&@';
@@ -335,15 +336,29 @@ export class GreyScaleTransform extends Transform {
     // chunk represents a single image with dimensions gifWidth x gifHeight
     // First need to transform the chunk into the rgb from the color table
     // Then we need to transform the rgb values into greyscale
+    const {width, height} = this.gifObject;
+    const canvas = createCanvas(width, height);
+    const context = canvas.getContext('2d');
+    let x = 0;
+    let y = 0;
     let greyscaleBuffer = Buffer.alloc(chunk.length);
     for (let i = 0; i < chunk.length; i++) {
       const colorIndex = chunk[i] * 3;
-      const rgb = this.gifObject.globalColorTable.slice(colorIndex, colorIndex + 3);
-      const greyscale = Math.round(rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] * 0.114);
+      const [r, g, b] = this.gifObject.globalColorTable.slice(colorIndex, colorIndex + 3);
+      const greyscale = Math.round(r * 0.299 + g * 0.587 + b * 0.114);
       // const greyscale = Math.round((rgb[0] + rgb[1] + rgb[2]) / 3);
       // const greyscale = Math.round(rgb[0] * 0.1 + rgb[1] * 0.1 + rgb[2] * 0.8);
       greyscaleBuffer[i] = greyscale;
+
+      context.fillStyle = `rgb(${r}, ${g}, ${b})`;
+      context.fillRect(x, y, 1, 1);
+      x++;
+      if (x === width) {
+        x = 0;
+        y++;
+      }
     }
+    this.gifObject.canvasDataUrls.push(canvas.toDataURL('image/png'));
 
     this.push(greyscaleBuffer);
     callback();

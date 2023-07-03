@@ -64,7 +64,10 @@ const server = http.createServer(app);
 // get('https://media.giphy.com/media/8YNxrDHjOFE7qZKXS5/giphy.gif', (res) => {
 // get('https://media.giphy.com/media/3o7527pa7qs9kCG78A/giphy.gif', (res) => {
 function myTransform(url, io) {
+  // frames = [];
+  // console.log('myTransform');
   get(url, (res) => {
+    // console.log('get');
     frames = [];
     myObject.delayTimes = []; 
     myObject.imagePositions = [];
@@ -72,6 +75,7 @@ function myTransform(url, io) {
     myObject.widthCompression = 5;
     myObject.heightCompression = 10;
     myObject.frames = [];
+    myObject.canvasDataUrls = [];
     const stream = res  
       .pipe(new HeaderTransform(myObject))
       .pipe(new FrameHeaderTransform(myObject))
@@ -89,7 +93,9 @@ function myTransform(url, io) {
         while (i < frames.length) {
           const {chunk, delay} = frames[i];
           await new Promise((resolve) => {
+            // console.log('chunk.toString()', chunk.toString());
             io.emit('frame', chunk.toString());
+            io.emit('colorFrame', myObject.canvasDataUrls[i]);
             setTimeout(resolve, delay * 10);
           });
 
