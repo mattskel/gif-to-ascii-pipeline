@@ -1,6 +1,8 @@
 import { Transform } from 'stream';
 
-const asciiScale = ' .,:ilwW'
+// const asciiScale = ' .,:ilwW'
+const asciiScale = ' .,:;irsXA253hMHGS#9B&@';
+// const asciiScale = '@#%*+=-:. ';
 
 export class HeaderTransform extends Transform {
   constructor(
@@ -294,7 +296,7 @@ export class FrameImageTransform extends Transform {
               prev_code =  code;
               continue;
             }
-          } else {
+          } else if (code_table[prev_code]) {
             k = code_table[prev_code][0];
             indexStream.push(...code_table[prev_code], k);
           }
@@ -338,6 +340,8 @@ export class GreyScaleTransform extends Transform {
       const colorIndex = chunk[i] * 3;
       const rgb = this.gifObject.globalColorTable.slice(colorIndex, colorIndex + 3);
       const greyscale = Math.round(rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] * 0.114);
+      // const greyscale = Math.round((rgb[0] + rgb[1] + rgb[2]) / 3);
+      // const greyscale = Math.round(rgb[0] * 0.1 + rgb[1] * 0.1 + rgb[2] * 0.8);
       greyscaleBuffer[i] = greyscale;
     }
 

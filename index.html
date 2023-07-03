@@ -13,7 +13,12 @@
     </style>
   </head>
   <body>
-    <div id="whereTheTextGoes"></div>
+    <div>
+      <form action="/submit" method="get">
+        <input type="text" name="searchTerm" autocomplete="off" /><button>Send</button>
+      </form>  
+      <div id="whereTheTextGoes"></div>
+    </div>
     <script src="/socket.io/socket.io.js"></script>
     <script>
       var socket = io();
