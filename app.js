@@ -76,6 +76,7 @@ function myTransform(url, io) {
     myObject.heightCompression = 10;
     myObject.frames = [];
     myObject.canvasDataUrls = [];
+    myObject.transparentColors = [];
     const stream = res  
       .pipe(new HeaderTransform(myObject))
       .pipe(new FrameHeaderTransform(myObject))

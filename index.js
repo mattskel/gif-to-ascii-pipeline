@@ -24,15 +24,16 @@ app.get('/', (req, res) => {
 app.get('/submit', (req, res) => {
   // transform = undefined;
   const {searchTerm} = req.query;
-  axios.get(`https://api.giphy.com/v1/gifs/search?api_key=${process.env.GIPHY_API_KEY}&q=${searchTerm}&limit=1`)
+  axios.get(`https://api.giphy.com/v1/gifs/search?api_key=${process.env.GIPHY_API_KEY}&q=${searchTerm}&limit=10`)
     .then((response) => {
       if (response.status !== 200) {
         // Something went wrong
       }
 
       const {data} = response.data;
-      const [{id}] = data;
-      console.log(id);
+      // const {id} = data[Math.floor(Math.random() * 10)];
+      // console.log(id);
+      const id = '3o72FfM5HJydzafgUE';
       myTransform(`https://media.giphy.com/media/${id}/giphy.gif`, io)
     });
 

@@ -45,6 +45,7 @@ export class HeaderTransform extends Transform {
     const sizeOfGlobalColorTable = _byte.slice(5, 8);
 
     this.myObject.gifBackground = chunk.readUInt8(11);
+    console.log('gifBackground', this.myObject.gifBackground);
     const gifAspectRatio = chunk.readUInt8(12);
 
     // If the global color table flag is set to 1
@@ -133,6 +134,7 @@ export class FrameHeaderTransform extends Transform {
     }
 
     while (this.identifier !== undefined) {
+      // console.log('this.identifier', this.identifier);
 
       /// EOF
       if (this.identifier === 0x3b) {
@@ -163,13 +165,96 @@ export class FrameHeaderTransform extends Transform {
           const delayTime = buffer[index++] | (buffer[index++] << 8);
           this.myObject.delayTimes.push(delayTime);
           const transparentColor = buffer[index++];
+          console.log('transparentColor', transparentColor);
+          this.myObject.transparentColors.push(transparentColor);
           const terminator = buffer[index++];
           if (terminator !== 0x00) {
             throw new Error('Invalid metadata block');
           }
 
           this.subType = undefined;
-        } 
+        } else if (this.subType === 0xff) {
+          // 0xff Application Extension
+          let subBlockLength = buffer[index++];
+          if (subBlockLength !== 0x0b) {
+            throw new Error('Invalid metadata block');
+          }
+
+          if (buffer.length - index < subBlockLength) {
+            this.previousTail = buffer.slice(index);
+            callback();
+            return;
+          }
+
+          const appIdentifier = buffer.slice(index, index + 8);
+          index += 8;
+          const appAuthenticationCode = buffer.slice(index, index + 3);
+          index += 3;
+
+          if (appIdentifier.toString() === 'NETSCAPE') {
+            const subBlockLength = buffer[index++];
+            if (subBlockLength !== 0x03) {
+              throw new Error('Invalid metadata block');
+            }
+
+            const subBlockIdentifier = buffer[index++];
+            if (subBlockIdentifier !== 0x01) {
+              throw new Error('Invalid metadata block');
+            }
+
+            const loopCount = buffer[index++] | (buffer[index++] << 8);
+            this.myObject.loopCount = loopCount;
+            const terminator = buffer[index++];
+            if (terminator !== 0x00) {
+              throw new Error('Invalid metadata block');
+            }
+          }
+
+          this.subType = undefined;
+        } else if (this.subType === 0xfe) {
+          // 0xfe Comment Extension
+          let subBlockLength = buffer[index++];
+          if (subBlockLength === 0x00) {
+            this.subType = undefined;
+          } else {
+            if (buffer.length - index < subBlockLength) {
+              this.previousTail = buffer.slice(index);
+              callback();
+              return;
+            }
+            const comment = buffer.slice(index, index + subBlockLength);
+            this.myObject.comments.push(comment.toString());
+            index += subBlockLength;
+          }
+        } else if (this.subType === 0x01) {
+          // 0x01 Plain Text Extension
+          let subBlockLength = buffer[index++];
+          if (subBlockLength !== 0x0c) {
+            throw new Error('Invalid metadata block');
+          }
+
+          if (buffer.length - index < subBlockLength) {
+            this.previousTail = buffer.slice(index);
+            callback();
+            return;
+          }
+
+          const left = buffer[index++] | (buffer[index++] << 8);
+          const top = buffer[index++] | (buffer[index++] << 8);
+          const width = buffer[index++] | (buffer[index++] << 8);
+          const height = buffer[index++] | (buffer[index++] << 8);
+          const cellWidth = buffer[index++];
+          const cellHeight = buffer[index++];
+          const foregroundColorIndex = buffer[index++];
+          const backgroundColorIndex = buffer[index++];
+          const terminator = buffer[index++];
+          if (terminator !== 0x00) {
+            throw new Error('Invalid metadata block');
+          }
+          
+        }
+
+
         this.identifier = buffer[index++];
       }
 
@@ -213,6 +298,7 @@ export class FrameHeaderTransform extends Transform {
         }
 
         while (this.subBlockLength !== 0) {
+          // console.log('this.subBlockLength !== 0')
           if (buffer.length - index < this.subBlockLength) {
             this.previousTail = buffer.slice(index);
             callback();
@@ -231,6 +317,7 @@ export class FrameHeaderTransform extends Transform {
 
         if (this.subBlockLength === 0) {
           const _buffer = Buffer.concat(this.blocks);
+          console.log('_buffer.length', _buffer.length);
           this.push(_buffer);
           this.subBlockLength = undefined;
           this.blocks = [];
@@ -248,6 +335,7 @@ export class FrameImageTransform extends Transform {
   constructor(myObject, options) {
     super(options);
     this.myObject = myObject;
+    // this.count = 0;
   }
 
   _transform(chunk, encoding, callback) {
@@ -265,13 +353,37 @@ export class FrameImageTransform extends Transform {
     let prev_code;
     let next_code;
     let k;
+
+    console.log('N', N);
+    console.log('subBlockLength', subBlockLength);
     if (subBlockLength !== 0) {
       const subBlock = chunk;
       let subIndex = 0;
       while (subIndex < subBlockLength) {
+        // if (subIndex === 0 && (this.count === 0 || this.count === 1)) {
+          // console.log('subBlock[...]', subBlock.slice(0, 10));
+        
+        // }
+        // console.log('subIndex < subBlockLength');
+        // console.log('subIndex', subIndex);
+        // console.log('subBlockLength', subBlockLength);
         binString = subBlock[subIndex++].toString(2).padStart(8, '0') + binString;
+        if (subIndex === 5378 && subBlock[subIndex] === 21) {
+          console.log('$here');
+        }
         if (binString.length >= currentCodeSize) {
           let _tmp = binString.slice(-currentCodeSize);
+          // if (code === 1339 && parseInt(_tmp, 2) === 4033) {
+          //   console.log('here');
+          // }
+          if (subIndex === 5380 && subBlock[subIndex] === 66) {
+            console.log('#here');
+          }
+          if (subIndex === 5379 && subBlock[subIndex] === 252) {
+            console.log('##here');
+          }
+
+          
           code = parseInt(_tmp, 2);
           binString = binString.slice(0, -currentCodeSize);
 
@@ -283,7 +395,7 @@ export class FrameImageTransform extends Transform {
             }
             next_code = eoi_code + 1;
             k = undefined;
-            code_table[ code] = [];
+            code_table[code] = [];
             currentCodeSize = N + 1;
             prev_code = undefined;
             continue;
@@ -294,7 +406,7 @@ export class FrameImageTransform extends Transform {
             indexStream.push(...code_table[code]);
             k = code_table[code][0];
             if (prev_code === undefined) {
-              prev_code =  code;
+              prev_code = code;
               continue;
             }
           } else if (code_table[prev_code]) {
@@ -303,6 +415,9 @@ export class FrameImageTransform extends Transform {
           }
 
           if (code_table[prev_code] === undefined) {
+            console.log('next_code', next_code);
+            console.log('prev_code', prev_code);
+            console.log('code', code);
             throw new Error('Something went wrong');
           }
 
@@ -311,6 +426,9 @@ export class FrameImageTransform extends Transform {
           }
 
           if (next_code < 4096) {
+            if (code === 4033 && next_code === 3991) {
+              console.log('@here');
+            }
             code_table[next_code++] = [...code_table[prev_code], k];
             prev_code = code;
           }
@@ -323,6 +441,8 @@ export class FrameImageTransform extends Transform {
       // reached the end of the frame
       callback();
     }
+
+    this.count++;
   }
 }
 
@@ -330,6 +450,7 @@ export class GreyScaleTransform extends Transform {
   constructor(gifObject, options) {
     super(options);
     this.gifObject = gifObject;
+    this.prevContext = undefined;
   }
 
   _transform(chunk, encoding, callback) {
@@ -339,15 +460,22 @@ export class GreyScaleTransform extends Transform {
     const {width, height} = this.gifObject;
     const canvas = createCanvas(width, height);
     const context = canvas.getContext('2d');
+    const transparentColor = this.gifObject.transparentColors.shift();
     let x = 0;
     let y = 0;
     let greyscaleBuffer = Buffer.alloc(chunk.length);
     for (let i = 0; i < chunk.length; i++) {
-      const colorIndex = chunk[i] * 3;
-      const [r, g, b] = this.gifObject.globalColorTable.slice(colorIndex, colorIndex + 3);
+      let r, g, b;
+      if (chunk[i] === transparentColor && this.prevContext) {
+        [r, g, b] = this.prevContext.getImageData(x, y, 1, 1).data;
+      } else {
+        const colorIndex = chunk[i] * 3;
+        [r, g, b] = this.gifObject.globalColorTable.slice(colorIndex, colorIndex + 3);
+      }
+
+      // const colorIndex = chunk[i] * 3;
+      // const [r, g, b] = this.gifObject.globalColorTable.slice(colorIndex, colorIndex + 3);
       const greyscale = Math.round(r * 0.299 + g * 0.587 + b * 0.114);
-      // const greyscale = Math.round((rgb[0] + rgb[1] + rgb[2]) / 3);
-      // const greyscale = Math.round(rgb[0] * 0.1 + rgb[1] * 0.1 + rgb[2] * 0.8);
       greyscaleBuffer[i] = greyscale;
 
       context.fillStyle = `rgb(${r}, ${g}, ${b})`;
@@ -359,6 +487,7 @@ export class GreyScaleTransform extends Transform {
       }
     }
     this.gifObject.canvasDataUrls.push(canvas.toDataURL('image/png'));
+    this.prevContext = context;
 
     this.push(greyscaleBuffer);
     callback();
