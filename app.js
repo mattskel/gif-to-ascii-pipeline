@@ -11,7 +11,8 @@ import {
   GreyScaleTransform,
   CompressionTransform,
   AsciiTransform,
-  PulseTransform
+  PulseTransform,
+  ColorTransform
 } from './myTransforms.js';
 
 let frames = [];
@@ -81,13 +82,15 @@ function myTransform(url, io) {
       .pipe(new HeaderTransform(myObject))
       .pipe(new FrameHeaderTransform(myObject))
       .pipe(new FrameImageTransform(myObject))
-      .pipe(new GreyScaleTransform(myObject))
-      .pipe(new FrameTransform())
-      .pipe(new CompressionTransform(myObject))
-      .pipe(new AsciiTransform(myObject))
+      .pipe(new ColorTransform(myObject))
+      // .pipe(new GreyScaleTransform(myObject))
+      // .pipe(new FrameTransform())
+      // .pipe(new CompressionTransform(myObject))
+      // .pipe(new AsciiTransform(myObject))
       .pipe(new PulseTransform(myObject, frames))
       .on('data', async (data) => {
-        io.emit('frame', data.toString());
+        // io.emit('frame', data.toString());
+        console.log('data');
       })
       .on('finish', async () => {
         let i = 0;
@@ -95,7 +98,7 @@ function myTransform(url, io) {
           const {chunk, delay} = frames[i];
           await new Promise((resolve) => {
             // console.log('chunk.toString()', chunk.toString());
-            io.emit('frame', chunk.toString());
+            // io.emit('frame', chunk.toString());
             io.emit('colorFrame', myObject.canvasDataUrls[i]);
             setTimeout(resolve, delay * 10);
           });

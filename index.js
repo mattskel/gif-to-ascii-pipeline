@@ -33,7 +33,8 @@ app.get('/submit', (req, res) => {
       const {data} = response.data;
       // const {id} = data[Math.floor(Math.random() * 10)];
       // console.log(id);
-      const id = '3o72FfM5HJydzafgUE';
+      const id = '3o72FfM5HJydzafgUE'; // fire
+      // const id = 'v6aOjy0Qo1fIA' // cat;
       myTransform(`https://media.giphy.com/media/${id}/giphy.gif`, io)
     });
 
