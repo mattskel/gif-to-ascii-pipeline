@@ -18,7 +18,7 @@
         <input type="text" name="searchTerm" autocomplete="off" /><button>Send</button>
       </form>  
       <div id="whereTheTextGoes"></div>
-      <img id="image" src="" alt="PNG Image">
+      <!-- <img id="image" src="" alt="PNG Image"> -->
     </div>
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -40,6 +40,7 @@
           .then((response) => response.body)
           .then((body) => {
             const reader = body.getReader();
+            const decoder = new TextDecoder();
 
             function readStream() {
               return reader.read().then(({ done, value }) => {
@@ -48,10 +49,11 @@
                   console.log("Streaming complete.");
                   return;
                 }
-                // console.log('value', value);
-                // Convert buffer to ascii text
               
-                textArea.innerHTML = frame;
+                // Convert the Uint8Array to a string using TextDecoder
+                const stringValue = decoder.decode(value);
+
+                textArea.innerHTML = stringValue;
 
                 // Continue reading the stream
                 return readStream();

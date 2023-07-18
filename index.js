@@ -23,6 +23,9 @@ app.get('/', (req, res) => {
 // let transform;
 app.get('/submit', (req, res) => {
   // transform = undefined;
+  res.writeHead(200, {
+    'Content-Type': 'text/plain; charset=utf-8',
+  });
   const {searchTerm} = req.query;
   axios.get(`https://api.giphy.com/v1/gifs/search?api_key=${process.env.GIPHY_API_KEY}&q=${searchTerm}&limit=10`)
     .then((response) => {
