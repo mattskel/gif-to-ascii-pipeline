@@ -14,7 +14,7 @@
   </head>
   <body>
     <div>
-      <form action="/submit" method="get">
+      <form id="myForm">
         <input type="text" name="searchTerm" autocomplete="off" /><button>Send</button>
       </form>  
       <div id="whereTheTextGoes"></div>
@@ -22,17 +22,56 @@
     </div>
     <script src="/socket.io/socket.io.js"></script>
     <script>
-      var socket = io();
+      // var socket = io();
       var textArea = document.getElementById('whereTheTextGoes');
       var imgElement = document.getElementById('image');
+      var myForm = document.getElementById('myForm');
 
-      socket.on('frame', (frame) => {
-        textArea.innerHTML = frame;
-      });
+      myForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        // const httpRequest = new XMLHttpRequest();
+        // httpRequest.open('GET', '/submit', true);
+        // httpRequest.send({query: {searchTerm: 'cat'}})
+        fetch('/submit', {
+          method: 'GET',
+          // body: JSON.stringify({searchTerm: 'cat'}),
+          query: {searchTerm: 'cat'},
+        })
+          .then((response) => response.body)
+          .then((body) => {
+            const reader = body.getReader();
 
-      socket.on('colorFrame', (url) => {
-        imgElement.src = url;
-      });
+            function readStream() {
+              return reader.read().then(({ done, value }) => {
+                // Check if the stream has ended
+                if (done) {
+                  console.log("Streaming complete.");
+                  return;
+                }
+                // console.log('value', value);
+                // Convert buffer to ascii text
+              
+                textArea.innerHTML = frame;
+
+                // Continue reading the stream
+                return readStream();
+              });
+            }
+
+            // Start reading the streamed data
+            return readStream();
+          })
+
+      })
+
+      // socket.on('frame', (frame) => {
+      //   textArea.innerHTML = frame;
+      // });
+
+      // socket.on('colorFrame', (url) => {
+      //   console.log('colorFrame');
+      //   imgElement.src = url;
+      // });
     </script>
   </body>
 </html>

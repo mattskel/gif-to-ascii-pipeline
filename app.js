@@ -34,13 +34,14 @@ const myObject = {
 // const pulseTransform = new PulseTransform(myObject, frames);
 
 class FrameTransform extends Transform {
-  constructor(options) {
+  constructor(myObject, options) {
     super(options);
     this.frame;
+    this.myObject = myObject;
   }
 
   _transform(chunk, encoding, callback) {
-    const {width: _gifWidth, height: _gifHeight, gifBackground, imagePositions} = myObject;
+    const {width: _gifWidth, height: _gifHeight, gifBackground, imagePositions} = this.myObject;
     if (!this.frame) {
       this.frame = new Array(_gifWidth * _gifHeight).fill(gifBackground);
     }
@@ -64,7 +65,7 @@ const server = http.createServer(app);
 
 // get('https://media.giphy.com/media/8YNxrDHjOFE7qZKXS5/giphy.gif', (res) => {
 // get('https://media.giphy.com/media/3o7527pa7qs9kCG78A/giphy.gif', (res) => {
-function myTransform(url, io) {
+function myTransform(url, _res) {
   // frames = [];
   // console.log('myTransform');
   get(url, (res) => {
@@ -78,28 +79,28 @@ function myTransform(url, io) {
     myObject.frames = [];
     myObject.canvasDataUrls = [];
     myObject.transparentColors = [];
-    const stream = res  
+    const rgbStream = res  
       .pipe(new HeaderTransform(myObject))
       .pipe(new FrameHeaderTransform(myObject))
       .pipe(new FrameImageTransform(myObject))
       .pipe(new ColorTransform(myObject))
-      // .pipe(new GreyScaleTransform(myObject))
-      // .pipe(new FrameTransform())
-      // .pipe(new CompressionTransform(myObject))
-      // .pipe(new AsciiTransform(myObject))
+      // .on('data', async (data) => {
+      //   console.log('here');
+      //   io.emit('colorFrame', data.toString());
+      // })
+      .pipe(new GreyScaleTransform(myObject))
+      // .pipe(new FrameTransform(myObject))
+      .pipe(new CompressionTransform(myObject))
+      .pipe(new AsciiTransform(myObject))
       .pipe(new PulseTransform(myObject, frames))
       .on('data', async (data) => {
-        // io.emit('frame', data.toString());
-        console.log('data');
+        _res.write(data.toString());
       })
       .on('finish', async () => {
         let i = 0;
         while (i < frames.length) {
           const {chunk, delay} = frames[i];
           await new Promise((resolve) => {
-            // console.log('chunk.toString()', chunk.toString());
-            // io.emit('frame', chunk.toString());
-            io.emit('colorFrame', myObject.canvasDataUrls[i]);
             setTimeout(resolve, delay * 10);
           });
 

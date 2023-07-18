@@ -321,6 +321,9 @@ export class FrameHeaderTransform extends Transform {
         if (this.subBlockLength === 0) {
           const _buffer = Buffer.concat(this.blocks);
           console.log('_buffer.length', _buffer.length);
+          console.log('index', index);
+          // console.log('this.previousTail.length', this.previousTail.length);
+          // console.log('buffer.length', buffer.length);
           this.push(_buffer);
           this.subBlockLength = undefined;
           this.blocks = [];
@@ -475,6 +478,7 @@ export class GreyScaleTransform extends Transform {
     // const canvas = createCanvas(width, height);
     // const context = canvas.getContext('2d');
     const imagePosition = this.gifObject.imagePositions.shift();
+    console.log('imagePosition', imagePosition)
     const {left = 0, top = 0, width, height} = (imagePosition)
       ? imagePosition
       : this.gifObject;
@@ -580,6 +584,7 @@ export class AsciiTransform extends Transform {
         rowString = '';
       }
     }
+    console.log(rows.join('\n'));
     this.push(rows.join('\n'));
     callback();
     
@@ -644,8 +649,41 @@ export class ColorTransform extends Transform {
         y++;
       }
     }
+
     this.gifObject.canvasDataUrls.push(this.canvas.toDataURL('image/png'));
-    this.push(chunk.slice(0, 1));
+    // this.push(chunk.slice(0, 1));
+    this.push(Buffer.from(this.canvas.toDataURL('image/png')));
+    callback();
+  }
+}
+
+export class RGBTransform extends Transform {
+  constructor(gifObject, options) {
+    super(options);
+    this.gifObject = gifObject;
+  }
+
+  _transform(chunk, encoding, callback) {
+    const colorBuffer = Buffer.alloc(chunk.length * 3);
+    const transparentColor = this.gifObject.transparentColors.shift();
+    for (let i = 0; i < chunk.length; i++) {
+      let r, g, b;
+      if (chunk[i] !== transparentColor) {
+        const colorIndex = chunk[i] * 3;
+        [r, g, b] = this.gifObject.globalColorTable.slice(colorIndex, colorIndex + 3);
+        // add r, g, b to buffer
+        colorBuffer[i * 3] = r;
+        colorBuffer[i * 3 + 1] = g;
+        colorBuffer[i * 3 + 2] = b;
+        
+      }
+      x++;
+      if (x - left === width) {
+        x = left;
+        y++;
+      }
+    }
+    this.push(colorBuffer);
     callback();
   }
 }
