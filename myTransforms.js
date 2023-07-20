@@ -374,6 +374,9 @@ export class FrameImageTransform extends Transform {
         // console.log('subIndex', subIndex);
         // console.log('subBlockLength', subBlockLength);
         binString = subBlock[subIndex++].toString(2).padStart(8, '0') + binString;
+        if (subIndex === 5378) {
+          console.log('subBlock[subIndex]', subBlock[subIndex]);
+        }
         if (subIndex === 5378 && subBlock[subIndex] === 21) {
           console.log('$here');
         }
@@ -523,6 +526,7 @@ export class AsciiTransform extends Transform {
     }
     // console.log(rows.join('\n'));
     this.push(rows.join('\n'));
+    // this.push(`<p>${rows.join('</p><br><p>')}</p>`);
     callback();
     
   }
@@ -540,10 +544,10 @@ export class PulseTransform extends Transform {
     this.push(chunk);
     const delay = delayTimes.shift();
     this.frames.push({chunk, delay})
-    // setTimeout(() => {
-    //   callback();
-    // }, delay * 10);
-    callback();
+    setTimeout(() => {
+      callback();
+    }, delay * 10);
+    // callback();
   }
 }
 
@@ -557,12 +561,6 @@ export class ColorTransform extends Transform {
   }
 
   _transform(chunk, encoding, callback) {
-    // if (!this.context) {
-    //   const {width, height} = this.gifObject;
-    //   const canvas = createCanvas(width, height);
-    //   this.context = canvas.getContext('2d');
-    //   this.canvas = canvas;
-    // }
 
     if (!this.frameBuffer) {
       const {width, height} = this.gifObject;
@@ -579,12 +577,9 @@ export class ColorTransform extends Transform {
     let y = top;
     const transparentColor = this.gifObject.transparentColors.shift();
     for (let i = 0; i < chunk.length; i++) {
-      // let r, g, b;
       if (chunk[i] !== transparentColor) {
         const colorIndex = chunk[i] * 3;
         const [r, g, b] = this.gifObject.globalColorTable.slice(colorIndex, colorIndex + 3);
-        // this.context.fillStyle = `rgb(${r}, ${g}, ${b})`;
-        // this.context.fillRect(x, y, 1, 1);
         const rgbIndex = y * width * 3 + x * 3;
         this.frameBuffer[rgbIndex] = r;
         this.frameBuffer[rgbIndex + 1] = g;
@@ -597,9 +592,6 @@ export class ColorTransform extends Transform {
       }
     }
 
-    // this.gifObject.canvasDataUrls.push(this.canvas.toDataURL('image/png'));
-    // this.push(chunk.slice(0, 1));
-    // this.push(Buffer.from(this.canvas.toDataURL('image/png')));
     this.push(this.frameBuffer);
     callback();
   }

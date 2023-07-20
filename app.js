@@ -78,7 +78,7 @@ function myTransform(url, _res) {
     myObject.imagePositions = [];
     myObject.codeSizes = [];
     myObject.widthCompression = 5;
-    myObject.heightCompression = 10;
+    myObject.heightCompression = 5;
     myObject.frames = [];
     myObject.canvasDataUrls = [];
     myObject.transparentColors = [];
@@ -113,8 +113,8 @@ function myTransform(url, _res) {
       //   }
       // })
 
-      frameStream
-        .pipe(new CanvasTransform(myObject))
+      // frameStream
+      //   .pipe(new CanvasTransform(myObject))
 
       frameStream
         .pipe(new GreyScaleTransform(myObject))
@@ -122,8 +122,19 @@ function myTransform(url, _res) {
         .pipe(new AsciiTransform(myObject))
         .pipe(new PulseTransform(myObject, frames))
         .on('data', (data) => {
-          console.log(data.toString());
+          // console.log(data.toString());
           _res.write(data.toString());
+        })
+        .on('finish', () => {
+          // need to extract the delays from the frames
+          const delays = frames
+            .map(({delay}) => delay);
+
+          const framesString = JSON.stringify(delays);
+          _res.write(framesString);
+          // _res.write(JSON.stringify(frames));
+          // _res.end(JSON.stringify(frames));
+          _res.end();
         })
   })
     .on('error', (err) => {
