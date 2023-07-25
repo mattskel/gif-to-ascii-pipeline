@@ -18,11 +18,11 @@
         <input type="text" name="searchTerm" autocomplete="off" /><button>Send</button>
       </form>  
       <div id="whereTheTextGoes" style="font-size: 1.25em; line-height: 0.66em"></div>
-      <!-- <img id="image" src="" alt="PNG Image"> -->
+      <img id="image" src="" alt="PNG Image">
     </div>
     <script src="/socket.io/socket.io.js"></script>
     <script>
-      // var socket = io();
+      var socket = io();
       var textArea = document.getElementById('whereTheTextGoes');
       var imgElement = document.getElementById('image');
       var myForm = document.getElementById('myForm');
@@ -94,10 +94,10 @@
       //   textArea.innerHTML = frame;
       // });
 
-      // socket.on('colorFrame', (url) => {
-      //   console.log('colorFrame');
-      //   imgElement.src = url;
-      // });
+      socket.on('colorFrame', (url) => {
+        console.log('colorFrame');
+        imgElement.src = url;
+      });
     </script>
   </body>
 </html>

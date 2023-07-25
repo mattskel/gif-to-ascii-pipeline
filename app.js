@@ -67,7 +67,7 @@ const server = http.createServer(app);
 
 // get('https://media.giphy.com/media/8YNxrDHjOFE7qZKXS5/giphy.gif', (res) => {
 // get('https://media.giphy.com/media/3o7527pa7qs9kCG78A/giphy.gif', (res) => {
-function myTransform(url, _res) {
+function myTransform(url, _res, io) {
   
   // frames = [];
   // console.log('myTransform');
@@ -113,8 +113,12 @@ function myTransform(url, _res) {
       //   }
       // })
 
-      // frameStream
-      //   .pipe(new CanvasTransform(myObject))
+      frameStream
+        .pipe(new CanvasTransform(myObject))
+        .on('data', (data) => {
+          console.log('on Data');
+          io.emit('colorFrame', data.toString());
+        });
 
       frameStream
         .pipe(new GreyScaleTransform(myObject))
@@ -130,6 +134,7 @@ function myTransform(url, _res) {
           const delays = frames
             .map(({delay}) => delay);
 
+          console.log('delays', delays);  
           const framesString = JSON.stringify(delays);
           _res.write(framesString);
           // _res.write(JSON.stringify(frames));

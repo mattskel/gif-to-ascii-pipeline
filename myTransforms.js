@@ -1,5 +1,5 @@
 import { Transform } from 'stream';
-import { createCanvas } from 'canvas';
+import { createCanvas, createImageData, Image } from 'canvas';
 
 // const asciiScale = ' .,:ilwW'
 const asciiScale = ' .,:;irsXA253hMHGS#9B&@';
@@ -296,9 +296,11 @@ export class FrameHeaderTransform extends Transform {
 
         if (this.previousTail.length > 0) {
           this.previousTail = Buffer.alloc(0);
-        } else {
+        } else if (this.subBlockLength === undefined) {
           this.subBlockLength = buffer[index++];
+          console.log('this.subBlockLength', this.subBlockLength);
         }
+
 
         while (this.subBlockLength !== 0) {
           // console.log('this.subBlockLength !== 0')
@@ -315,11 +317,18 @@ export class FrameHeaderTransform extends Transform {
             break;
           }
 
+          if (this.blocks.length === 117) {
+            console.log('data', data);
+            console.log('this.subBlockLength', this.subBlockLength);
+          }
+
           this.subBlockLength = buffer[index++];
         }
 
         if (this.subBlockLength === 0) {
           const _buffer = Buffer.concat(this.blocks);
+          console.log('this.blocks.length', this.blocks.length);
+          console.log('this.blocks[0]', this.blocks[0]);
           // console.log('_buffer.length', _buffer.length);
           // console.log('index', index);
           // console.log('this.previousTail.length', this.previousTail.length);
@@ -345,6 +354,7 @@ export class FrameImageTransform extends Transform {
   }
 
   _transform(chunk, encoding, callback) {
+    console.log('chunk.length', chunk.length);
     const {codeSizes} = this.myObject;
     const subBlockLength = chunk.length;
     const indexStream = [];
@@ -376,6 +386,7 @@ export class FrameImageTransform extends Transform {
         binString = subBlock[subIndex++].toString(2).padStart(8, '0') + binString;
         if (subIndex === 5378) {
           console.log('subBlock[subIndex]', subBlock[subIndex]);
+          // console.log('chunk.length', chunk.length);
         }
         if (subIndex === 5378 && subBlock[subIndex] === 21) {
           console.log('$here');
@@ -465,7 +476,7 @@ export class GreyScaleTransform extends Transform {
     const {width, height} = this.gifObject;
     let greyscaleBuffer = Buffer.alloc(height * width);
     for (let i = 0; i < greyscaleBuffer.length; i++) {
-      const [r, g, b] = chunk.slice(i * 3, i * 3 + 3);
+      const [r, g, b, a] = chunk.slice(i * 4, i * 4 + 4);
       const greyscale = Math.round(r * 0.299 + g * 0.587 + b * 0.114);
       greyscaleBuffer[i] = greyscale;
     }
@@ -564,7 +575,7 @@ export class ColorTransform extends Transform {
 
     if (!this.frameBuffer) {
       const {width, height} = this.gifObject;
-      this.frameBuffer = Buffer.alloc(width * height *3)
+      this.frameBuffer = Buffer.alloc(width * height * 4)
     }
 
     const imagePosition = this.gifObject.imagePositions.shift();
@@ -575,15 +586,17 @@ export class ColorTransform extends Transform {
 
     let x = left;
     let y = top;
+    const a = 255;
     const transparentColor = this.gifObject.transparentColors.shift();
     for (let i = 0; i < chunk.length; i++) {
       if (chunk[i] !== transparentColor) {
         const colorIndex = chunk[i] * 3;
         const [r, g, b] = this.gifObject.globalColorTable.slice(colorIndex, colorIndex + 3);
-        const rgbIndex = y * width * 3 + x * 3;
+        const rgbIndex = y * width * 4 + x * 4;
         this.frameBuffer[rgbIndex] = r;
         this.frameBuffer[rgbIndex + 1] = g;
         this.frameBuffer[rgbIndex + 2] = b;
+        this.frameBuffer[rgbIndex + 3] = a;
       }
       x++;
       if (x - left === width) {
@@ -628,7 +641,7 @@ export class RGBTransform extends Transform {
   }
 }
 
-export class CanvasTransform extends Transform {
+export class _CanvasTransform extends Transform {
   constructor(gifObject, options) {
     super(options);
     this.gifObject = gifObject;
@@ -665,6 +678,59 @@ export class CanvasTransform extends Transform {
 
     // this.push(Buffer.from(this.canvas.toDataURL('image/png')));
     this.push(this.canvas.toBuffer('image/png'));
+    callback();
+  }
+}
+
+export class CanvasTransform extends Transform {
+  constructor(gifObject, options) {
+    super(options);
+    this.gifObject = gifObject;
+    // this.context = undefined;
+    // this.canvas = undefined;
+  }
+
+  _transform(chunk, encoding, callback) {
+    const {width, height} = this.gifObject;
+    // Convert chunk to a Uint8ClampedArray
+
+    const buffer = Buffer.from(chunk);
+    const arraySize = width * height * 4
+    const myImg = createImageData(new Uint8ClampedArray(buffer), width, height);
+    // const myImg = createImageData(new Uint8ClampedArray(arraySize), width, height);
+    // const myImg = new Image();
+    // console.log(typeof myImg);
+    const canvas = createCanvas(width, height);
+    const context = canvas.getContext('2d');
+    context.putImageData(myImg, 0, 0);
+    // if (!this.context) {
+    //   this.canvas = canvas;
+    // }
+
+    // const imagePosition = this.gifObject.imagePositions.shift();
+    // const {left = 0, top = 0, width, height} = (imagePosition)
+    //   ? imagePosition
+    //   : this.gifObject;
+
+
+    // let x = left;
+    // let y = top;
+    // while (chunk.length) {
+    //   const [r, g, b] = chunk.splice(0, 3);
+    //   this.context.fillStyle = `rgb(${r}, ${g}, ${b})`;
+    //   this.context.fillRect(x, y, 1, 1);
+    //   x++;
+    //   if (x - left === width) {
+    //     x = left;
+    //     y++;
+    //   }
+    // }
+
+    const dataUrl = canvas.toDataURL('image/png');
+    // const dataUrl = canvas.toBuffer('image/png');
+    // console.log(dataUrl);
+    this.push(dataUrl);
+    // this.push(canvas.toBuffer('image/png', {quality: 0.5}));
     callback();
   }
 }

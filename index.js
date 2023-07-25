@@ -38,7 +38,7 @@ app.get('/submit', (req, res) => {
       // console.log(id);
       const id = '3o72FfM5HJydzafgUE'; // fire
       // const id = 'v6aOjy0Qo1fIA' // cat;
-      myTransform(`https://media.giphy.com/media/${id}/giphy.gif`, res)
+      myTransform(`https://media.giphy.com/media/${id}/giphy.gif`, res, io)
     });
 
 })
