@@ -71,7 +71,7 @@ export class HeaderTransform extends Transform {
     
     // check if the imageDescriptor value is 0x21
     // If it is then we have metadata block
-    let graphicControlExtensionStart = 0;
+    let graphicControlExtensionStart = _imageDescriptorStart + 1;
     if (imageDescriptor.toString() === '!') {
       // Get the start of the metadata block
       const metadataBlockStart = _imageDescriptorStart + 1;
@@ -290,7 +290,7 @@ export class FrameHeaderTransform extends Transform {
           return;
         }
         
-        if (this.subBlockLength === undefined) {
+        if (this.subBlockLength === undefined && this.blocks.length === 0) {
           const left = buffer[index++] | (buffer[index++] << 8);
           const top = buffer[index++] | (buffer[index++] << 8);
           const width = buffer[index++] | (buffer[index++] << 8);
@@ -309,7 +309,7 @@ export class FrameHeaderTransform extends Transform {
           return;
         }
 
-        if (this.subBlockLength === undefined) {
+        if (this.subBlockLength === undefined && this.blocks.length === 0) {
           this.codeSize = buffer[index++];
           let N = this.codeSize
           this.myObject.codeSizes.push(N);
