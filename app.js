@@ -116,7 +116,7 @@ function myTransform(url, _res, io) {
       frameStream
         .pipe(new CanvasTransform(myObject))
         .on('data', (data) => {
-          console.log('on Data');
+          // console.log('data.length', data.length);
           io.emit('colorFrame', data.toString());
         });
 
@@ -126,7 +126,6 @@ function myTransform(url, _res, io) {
         .pipe(new AsciiTransform(myObject))
         .pipe(new PulseTransform(myObject, frames))
         .on('data', (data) => {
-          // console.log(data.toString());
           _res.write(data.toString());
         })
         .on('finish', () => {
@@ -134,11 +133,8 @@ function myTransform(url, _res, io) {
           const delays = frames
             .map(({delay}) => delay);
 
-          console.log('delays', delays);  
           const framesString = JSON.stringify(delays);
           _res.write(framesString);
-          // _res.write(JSON.stringify(frames));
-          // _res.end(JSON.stringify(frames));
           _res.end();
         })
   })

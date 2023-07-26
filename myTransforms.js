@@ -26,11 +26,9 @@ export class HeaderTransform extends Transform {
     }
     const gifVersion = chunk.slice(3, 6);
     const gifWidth = chunk.readUInt16LE(6);
-    // console.log('gifWidth', gifWidth);
     this.myObject.width = gifWidth;
     const gifHeight = chunk.readUInt16LE(8);
     this.myObject.height = gifHeight;
-    // this.rowReturn = gifHeight / this.heightCompression
 
     const gifField = chunk.readUInt8(10);
     const colorTableStart = 10;
@@ -48,7 +46,6 @@ export class HeaderTransform extends Transform {
     const sizeOfGlobalColorTable = _byte.slice(5, 8);
 
     this.myObject.gifBackground = chunk.readUInt8(11);
-    // console.log('gifBackground', this.myObject.gifBackground);
     const gifAspectRatio = chunk.readUInt8(12);
 
     // If the global color table flag is set to 1
@@ -130,14 +127,24 @@ export class FrameHeaderTransform extends Transform {
   _transform(chunk, encoding, callback) {
     let index = 0;
     const buffer = Buffer.concat([this.previousTail, chunk]);
+    if (buffer.length < 1) {
+      callback();
+      return;
+    }
+    // console.log('')
+    console.log('\n=================================')
+    console.log('this.previousTail.length', this.previousTail.length);
+    console.log('buffer.length', buffer.length);
+    console.log('this.identifier', this.identifier);
+    console.log('this.blocks.length', this.blocks.length);
     
 
     if (this.identifier === undefined) {
       this.identifier = buffer[index++];
     }
+    console.log('this.identifier', this.identifier);
 
     while (this.identifier !== undefined) {
-      // console.log('this.identifier', this.identifier);
 
       /// EOF
       if (this.identifier === 0x3b) {
@@ -147,12 +154,21 @@ export class FrameHeaderTransform extends Transform {
 
       // 0x21 Meta data identifier
       if (this.identifier === 0x21) {
+        console.log('Meta data identifier')
+        if (buffer.length - index < 1) {
+          this.previousTail = buffer.slice(index);
+          callback();
+          return;
+        }
         if (this.subType === undefined) {
           this.subType = buffer[index++];
         }
 
+        console.log('this.subType', this.subType);
+
         // 0xf9 Graphic Control Extension
         if (this.subType === 0xf9) {
+          console.log('Graphic Control Extension');
           let subBlockLength = buffer[index++];
           if (subBlockLength !== 0x04) {
             throw new Error('Invalid metadata block');
@@ -168,14 +184,13 @@ export class FrameHeaderTransform extends Transform {
           const delayTime = buffer[index++] | (buffer[index++] << 8);
           this.myObject.delayTimes.push(delayTime);
           const transparentColor = buffer[index++];
-          // console.log('transparentColor', transparentColor);
           this.myObject.transparentColors.push(transparentColor);
           const terminator = buffer[index++];
           if (terminator !== 0x00) {
             throw new Error('Invalid metadata block');
           }
 
-          this.subType = undefined;
+          // this.subType = undefined;
         } else if (this.subType === 0xff) {
           // 0xff Application Extension
           let subBlockLength = buffer[index++];
@@ -213,7 +228,7 @@ export class FrameHeaderTransform extends Transform {
             }
           }
 
-          this.subType = undefined;
+          // this.subType = undefined;
         } else if (this.subType === 0xfe) {
           // 0xfe Comment Extension
           let subBlockLength = buffer[index++];
@@ -256,13 +271,18 @@ export class FrameHeaderTransform extends Transform {
           }
           
         }
+        this.subType = undefined;
 
-
+        if (buffer.length < 1) {
+          callback();
+          return;
+        }
         this.identifier = buffer[index++];
       }
 
       // LWZ image
       if (this.identifier === 0x2c) {
+        console.log('LWZ image');
         const blockSize = 9;
         if (buffer.length - index < blockSize) {
           this.previousTail = buffer.slice(index);
@@ -277,6 +297,7 @@ export class FrameHeaderTransform extends Transform {
           const height = buffer[index++] | (buffer[index++] << 8);
           this.myObject.imagePositions.push({left, top, width, height});
           const flags = buffer[index++];
+          // console.log('flags', flags);
         }
 
         // For now assume that the global color table is used
@@ -298,12 +319,11 @@ export class FrameHeaderTransform extends Transform {
           this.previousTail = Buffer.alloc(0);
         } else if (this.subBlockLength === undefined) {
           this.subBlockLength = buffer[index++];
-          console.log('this.subBlockLength', this.subBlockLength);
+          // console.log('this.subBlockLength', this.subBlockLength);
         }
 
 
-        while (this.subBlockLength !== 0) {
-          // console.log('this.subBlockLength !== 0')
+        while (this.subBlockLength !== undefined && this.subBlockLength !== 0) {
           if (buffer.length - index < this.subBlockLength) {
             this.previousTail = buffer.slice(index);
             callback();
@@ -313,31 +333,44 @@ export class FrameHeaderTransform extends Transform {
           const data = buffer.slice(index, index + this.subBlockLength);
           this.blocks.push(data);
           index += this.subBlockLength;
-          if (index >= buffer.length) {
-            break;
-          }
-
-          if (this.blocks.length === 117) {
-            console.log('data', data);
-            console.log('this.subBlockLength', this.subBlockLength);
-          }
+          // if (index >= buffer.length) {
+          //   break;
+          // }
 
           this.subBlockLength = buffer[index++];
         }
 
         if (this.subBlockLength === 0) {
+          console.log('***** pushing *****')
           const _buffer = Buffer.concat(this.blocks);
-          console.log('this.blocks.length', this.blocks.length);
-          console.log('this.blocks[0]', this.blocks[0]);
-          // console.log('_buffer.length', _buffer.length);
-          // console.log('index', index);
-          // console.log('this.previousTail.length', this.previousTail.length);
-          // console.log('buffer.length', buffer.length);
+          console.log('_buffer.length', _buffer.length)
+          console.log('buffer[index]', buffer[index])
+          console.log('buffer[index + 1]', buffer[index + 1])
+          console.log('buffer[index + 2]', buffer[index + 2])
+          
           this.push(_buffer);
           this.subBlockLength = undefined;
           this.blocks = [];
           this.identifier = buffer[index++];
+          // this.identifier = undefined;
+          // this.previousTail = buffer.slice(index);
+          // console.log('this.previousTail[0]', this.previousTail[0]);
+
+
+          // this.previousTail = buffer.slice(index);
+        // } else if (this.subBlockLength === undefined) {
+        //   this.subBlockLength = buffer[index++];
+        //   this.previousTail = buffer.slice(index);
+        //   callback();
+        //   return;
         }
+        // this.previousTail = buffer.slice(index);
+        // if (this.previousTail.length === 0) {
+        //   this.previousTail = buffer.slice(index);
+        // }
+      }
+      if (this.identifier !== undefined) {
+        console.log(`!!!!! this.subBlockLength is ${this.subBlockLength} !!!!!`);
       }
     }
 
@@ -354,7 +387,7 @@ export class FrameImageTransform extends Transform {
   }
 
   _transform(chunk, encoding, callback) {
-    console.log('chunk.length', chunk.length);
+    // console.log('chunk.length', chunk.length);
     const {codeSizes} = this.myObject;
     const subBlockLength = chunk.length;
     const indexStream = [];
@@ -384,13 +417,13 @@ export class FrameImageTransform extends Transform {
         // console.log('subIndex', subIndex);
         // console.log('subBlockLength', subBlockLength);
         binString = subBlock[subIndex++].toString(2).padStart(8, '0') + binString;
-        if (subIndex === 5378) {
-          console.log('subBlock[subIndex]', subBlock[subIndex]);
-          // console.log('chunk.length', chunk.length);
-        }
-        if (subIndex === 5378 && subBlock[subIndex] === 21) {
-          console.log('$here');
-        }
+        // if (subIndex === 5378) {
+        //   console.log('subBlock[subIndex]', subBlock[subIndex]);
+        //   console.log('chunk.length', chunk.length);
+        // }
+        // if (subIndex === 5378 && subBlock[subIndex] === 21) {
+        //   console.log('$here');
+        // }
         if (binString.length >= currentCodeSize) {
           let _tmp = binString.slice(-currentCodeSize);
           // if (code === 1339 && parseInt(_tmp, 2) === 4033) {
@@ -435,6 +468,7 @@ export class FrameImageTransform extends Transform {
           }
 
           if (code_table[prev_code] === undefined) {
+            console.log('\n**********************');
             console.log('next_code', next_code);
             console.log('prev_code', prev_code);
             console.log('code', code);
@@ -493,6 +527,7 @@ export class CompressionTransform extends Transform {
   }
 
   _transform(chunk, encoding, callback) {
+    // console.log('CompressionTransform transform');
     const {width: _gifWidth, height: _gifHeight, widthCompression, heightCompression} = this.gifObject;
     const pixelSize = widthCompression;
     const pixelSizeHeight = heightCompression;
@@ -512,6 +547,7 @@ export class CompressionTransform extends Transform {
       }
     }
 
+    // console.log('pushing')
     this.push(compressions);
     callback();
   }
@@ -524,6 +560,7 @@ export class AsciiTransform extends Transform {
   }
 
   _transform(chunk, encoding, callback) {
+    // console.log('AsciiTransform');
     const {width: _gifWidth, widthCompression} = this.gifObject;
     const rows = [];
     let rowString = '';
@@ -535,7 +572,7 @@ export class AsciiTransform extends Transform {
         rowString = '';
       }
     }
-    // console.log(rows.join('\n'));
+    // console.log('!here');
     this.push(rows.join('\n'));
     // this.push(`<p>${rows.join('</p><br><p>')}</p>`);
     callback();
@@ -575,31 +612,39 @@ export class ColorTransform extends Transform {
 
     if (!this.frameBuffer) {
       const {width, height} = this.gifObject;
-      this.frameBuffer = Buffer.alloc(width * height * 4)
+      this.width = width;
+      this.height = height;
+      this.frameBuffer = Buffer.alloc(this.width * this.height * 4)
     }
 
     const imagePosition = this.gifObject.imagePositions.shift();
-    const {left = 0, top = 0, width, height} = (imagePosition)
+    const {left = 0, top = 0, width: subWidth, height: subHeight} = (imagePosition)
       ? imagePosition
       : this.gifObject;
 
 
+    // console.log('imagePosition', imagePosition);
+    // console.log('pixels', width * height);
+    // console.log('chunk', chunk);
     let x = left;
     let y = top;
     const a = 255;
     const transparentColor = this.gifObject.transparentColors.shift();
+    // console.log('transparentColor', transparentColor);
+    // debugger;
     for (let i = 0; i < chunk.length; i++) {
       if (chunk[i] !== transparentColor) {
         const colorIndex = chunk[i] * 3;
         const [r, g, b] = this.gifObject.globalColorTable.slice(colorIndex, colorIndex + 3);
-        const rgbIndex = y * width * 4 + x * 4;
+        // const rgbIndex = y * width * 4 + x * 4; // This line here is wrong and has screwed me over for hours
+        const rgbIndex = y * this.width * 4 + x * 4;
         this.frameBuffer[rgbIndex] = r;
         this.frameBuffer[rgbIndex + 1] = g;
         this.frameBuffer[rgbIndex + 2] = b;
         this.frameBuffer[rgbIndex + 3] = a;
       }
       x++;
-      if (x - left === width) {
+      if (x - left === subWidth) {
         x = left;
         y++;
       }
@@ -677,7 +722,7 @@ export class _CanvasTransform extends Transform {
     }
 
     // this.push(Buffer.from(this.canvas.toDataURL('image/png')));
-    this.push(this.canvas.toBuffer('image/png'));
+    this.push(this.canvas.toBuffer('image/jpeg'), {quality: 0.5, progressive: false, chromaSubsampling: true});
     callback();
   }
 }
