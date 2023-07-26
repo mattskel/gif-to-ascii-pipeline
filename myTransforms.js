@@ -71,7 +71,8 @@ export class HeaderTransform extends Transform {
     
     // check if the imageDescriptor value is 0x21
     // If it is then we have metadata block
-    let graphicControlExtensionStart = _imageDescriptorStart + 1;
+    // let graphicControlExtensionStart = _imageDescriptorStart + 1;
+    let graphicControlExtensionStart = _imageDescriptorStart;
     if (imageDescriptor.toString() === '!') {
       // Get the start of the metadata block
       const metadataBlockStart = _imageDescriptorStart + 1;
