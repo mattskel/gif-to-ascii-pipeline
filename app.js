@@ -70,9 +70,7 @@ const server = http.createServer(app);
 function myTransform(url, _res, io) {
   
   // frames = [];
-  // console.log('myTransform');
   get(url, (res) => {
-    // console.log('get');
     frames = [];
     myObject.delayTimes = []; 
     myObject.imagePositions = [];
@@ -86,37 +84,11 @@ function myTransform(url, _res, io) {
       .pipe(new HeaderTransform(myObject))
       .pipe(new FrameHeaderTransform(myObject))
       .pipe(new FrameImageTransform(myObject))
-      // .pipe(new RGBTransform(myObject))
       .pipe(new ColorTransform(myObject))
-      // .pipe(new GreyScaleTransform(myObject))
-      // .pipe(new FrameTransform(myObject))
-      // .pipe(new CompressionTransform(myObject))
-      // .pipe(new AsciiTransform(myObject))
-      // .pipe(new PulseTransform(myObject, frames))
-      // .on('data', async (data) => {
-      //   _res.write(data.toString());
-      // })
-      // .on('finish', async () => {
-      //   let i = 0;
-      //   while (i < frames.length) {
-      //     const {chunk, delay} = frames[i];
-      //     await new Promise((resolve) => {
-      //       setTimeout(resolve, delay * 10);
-      //     });
-
-      //     i = (i + 1) % frames.length;
-      //   }
-      // })
-      // .on('error', (err) => {
-      //   if (err) {
-      //     console.log(err);
-      //   }
-      // })
 
       frameStream
         .pipe(new CanvasTransform(myObject))
         .on('data', (data) => {
-          // console.log('data.length', data.length);
           io.emit('colorFrame', data.toString());
         });
 

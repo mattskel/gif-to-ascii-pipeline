@@ -38,17 +38,12 @@
 
       myForm.addEventListener('submit', function(event) {
         event.preventDefault();
-        console.log('submit');
 
         let frames = [];
         let frameIndex = 0;
         let prevValue;;
-        // const httpRequest = new XMLHttpRequest();
-        // httpRequest.open('GET', '/submit', true);
-        // httpRequest.send({query: {searchTerm: 'cat'}})
         fetch('/submit', {
           method: 'GET',
-          // body: JSON.stringify({searchTerm: 'cat'}),
           query: {searchTerm: 'cat'},
         })
           .then((response) => response.body)
@@ -60,7 +55,6 @@
               return reader.read().then(({ done, value }) => {
                 // Check if the stream has ended
                 if (done) {
-                  console.log("Streaming complete.");
                   const delaysString = decoder.decode(prevValue);
                   const delays = JSON.parse(delaysString);
                   loopAnimation(frames, delays);
@@ -76,9 +70,6 @@
                 // Convert the Uint8Array to a string using TextDecoder
                 // const stringValue = decoder.decode(value);
                 prevValue = value;
-                
-
-                // textArea.innerHTML = stringValue;
 
                 // Continue reading the stream
                 return readStream();
