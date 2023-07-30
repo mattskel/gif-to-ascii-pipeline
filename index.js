@@ -38,9 +38,9 @@ app.get('/submit', (req, res) => {
       // const {id} = data[Math.floor(Math.random() * 10)];
       // console.log(id);
       // const id = '3o72FfM5HJydzafgUE'; // fire
-      // const id = 'v6aOjy0Qo1fIA' // cat; Not working for greyscale
+      const id = 'v6aOjy0Qo1fIA' // cat; Not working for greyscale
       // const id = '26n7aDOiWJJckm2pq'; // dolphin Not working at all
-      const id = 'IL5j1z69Qi7NTLTL7j'; // eat drink enjoy
+      // const id = 'IL5j1z69Qi7NTLTL7j'; // eat drink enjoy
       myTransform(`https://media.giphy.com/media/${id}/giphy.gif`, res, io)
     });
 
