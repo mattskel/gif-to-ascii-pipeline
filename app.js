@@ -75,8 +75,8 @@ function myTransform(url, _res, io) {
     myObject.delayTimes = []; 
     myObject.imagePositions = [];
     myObject.codeSizes = [];
-    myObject.widthCompression = 5;
-    myObject.heightCompression = 5;
+    myObject.widthCompression = 4;
+    myObject.heightCompression = 4;
     myObject.frames = [];
     myObject.canvasDataUrls = [];
     myObject.transparentColors = [];
