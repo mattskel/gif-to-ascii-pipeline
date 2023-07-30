@@ -13,7 +13,6 @@ import {
   AsciiTransform,
   PulseTransform,
   ColorTransform,
-  RGBTransform,
   CanvasTransform,
 } from './myTransforms.js';
 
@@ -26,39 +25,6 @@ const myObject = {
   // heightCompression: 10,
   // frames: [],
 };
-
-// const headerTransform = new HeaderTransform(myObject);
-// const frameHeaderTransform = new FrameHeaderTransform(myObject);
-// const frameImageTransform = new FrameImageTransform(myObject);
-// const greyScaleTransform = new GreyScaleTransform(myObject);
-// const compressionTransform = new CompressionTransform(myObject);
-// const asciiTransform = new AsciiTransform(myObject);
-// const pulseTransform = new PulseTransform(myObject, frames);
-
-class FrameTransform extends Transform {
-  constructor(myObject, options) {
-    super(options);
-    this.frame;
-    this.myObject = myObject;
-  }
-
-  _transform(chunk, encoding, callback) {
-    const {width: _gifWidth, height: _gifHeight, gifBackground, imagePositions} = this.myObject;
-    if (!this.frame) {
-      this.frame = new Array(_gifWidth * _gifHeight).fill(gifBackground);
-    }
-
-    const {top, left, width, height} = imagePositions.shift();
-    const initIndex = top * _gifWidth + left;
-    for (let i = 0; i < height; i++) {
-      const index = initIndex + i * _gifWidth;
-      this.frame.splice(index, width, ...chunk.slice(i * width, i * width + width));
-    }
-
-    this.push(Buffer.from(this.frame));
-    callback();
-  }
-}
 
 const app = express();
 const __dirname = path.resolve();
