@@ -29,12 +29,12 @@ const myObject = {
 const app = express();
 const __dirname = path.resolve();
 const server = http.createServer(app);
+const fixedLength = 4;
 // const io = new Server(server);
 
 // get('https://media.giphy.com/media/8YNxrDHjOFE7qZKXS5/giphy.gif', (res) => {
 // get('https://media.giphy.com/media/3o7527pa7qs9kCG78A/giphy.gif', (res) => {
 function myTransform(url, _res, io) {
-  
   // frames = [];
   get(url, (res) => {
     frames = [];
@@ -64,15 +64,18 @@ function myTransform(url, _res, io) {
         .pipe(new AsciiTransform(myObject))
         .pipe(new PulseTransform(myObject, frames))
         .on('data', (data) => {
-          _res.write(data.toString());
+          const buffer = Buffer.allocUnsafe(fixedLength);
+          buffer.writeInt32LE(data.length, 0);
+          _res.write(Buffer.concat([buffer, data]))
         })
         .on('finish', () => {
           // need to extract the delays from the frames
           const delays = frames
             .map(({delay}) => delay);
 
-          const framesString = JSON.stringify(delays);
-          _res.write(framesString);
+          const buffer = Buffer.allocUnsafe(fixedLength);
+          buffer.writeInt32LE(delays.length, 0);
+          _res.write(Buffer.concat([buffer, new Uint8Array(delays)]));
           _res.end();
         })
   })

@@ -41,7 +41,7 @@
 
         let frames = [];
         let frameIndex = 0;
-        let prevValue;;
+        let prevBuffer;;
         fetch('/submit', {
           method: 'GET',
           query: {searchTerm: 'cat'},
@@ -51,27 +51,53 @@
             const reader = body.getReader();
             const decoder = new TextDecoder();
 
+            let count = 0;
+
+            let previousTail = new Uint8Array([]);
+            let incomingBufferSize = undefined;
+            let previousBufferSize = undefined;
             function readStream() {
               return reader.read().then(({ done, value }) => {
-                // Check if the stream has ended
+                // console.log('reader.read()');
+                if (!done && !value) {
+                  return readStream();
+                }
+
                 if (done) {
-                  const delaysString = decoder.decode(prevValue);
-                  const delays = JSON.parse(delaysString);
-                  loopAnimation(frames, delays);
+                  // console.log('done');
+                  loopAnimation(frames, [...prevBuffer.subarray(4)]);
                   return;
                 }
 
-                if (prevValue) {
-                  const stringValue = decoder.decode(prevValue);
-                  textArea.innerHTML = stringValue;
-                  frames.push(stringValue);
+                // console.log('value.length', value.length);
+                let buffer = new Uint8Array([...previousTail, ...value]);
+                if (buffer.length < 4) {
+                  previousTail = buffer;
+                  // return readStream();
+                  return readStream();
                 }
-              
-                // Convert the Uint8Array to a string using TextDecoder
-                // const stringValue = decoder.decode(value);
-                prevValue = value;
 
-                // Continue reading the stream
+                const lengthArray = buffer.slice(0, 4);
+                const incomingBufferSize = (lengthArray[3] << 24) | (lengthArray[2] << 16) | (lengthArray[1] << 8) | lengthArray[0];
+                if (buffer.length < incomingBufferSize + 4) {
+                  // console.log('lengthArray', lengthArray);
+                  // console.log('if (buffer.length < incomingBufferSize + 4)', buffer.length, incomingBufferSize);
+                  previousTail = buffer;
+                  return readStream();
+                }
+
+                previousTail = new Uint8Array([]);
+                if (prevBuffer) {
+                  // console.log('prevBuffer.length', prevBuffer.length);
+                  const subArray = prevBuffer.subarray(4)
+                  const stringValue = decoder.decode(subArray).toString();
+                  textArea.innerHTML = stringValue;
+                  // console.log('count', count++);
+                  frames.push(stringValue);
+                  // previousTail = new Uint8Array([]);
+                }
+
+                prevBuffer = buffer;
                 return readStream();
               });
             }
@@ -87,7 +113,7 @@
       // });
 
       socket.on('colorFrame', (url) => {
-        console.log('colorFrame');
+        // console.log('colorFrame');
         imgElement.src = url;
       });
     </script>
