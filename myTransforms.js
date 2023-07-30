@@ -341,7 +341,7 @@ export class FrameHeaderTransform extends Transform {
         }
       }
       if (this.identifier !== undefined) {
-        console.log(`!!!!! this.subBlockLength is ${this.subBlockLength} !!!!!`);
+        // console.log(`!!!!! this.subBlockLength is ${this.subBlockLength} !!!!!`);
       }
     }
 
@@ -559,6 +559,7 @@ export class ColorTransform extends Transform {
     } else {
       this.previousTail = chunk;
       callback();
+      return;
     }
 
     if (!this.frameBuffer) {
@@ -604,14 +605,23 @@ export class CanvasTransform extends Transform {
   constructor(gifObject, options) {
     super(options);
     this.gifObject = gifObject;
+    this.previousTail = Buffer.alloc(0);
   }
 
   _transform(chunk, encoding, callback) {
     const {width, height} = this.gifObject;
+    const arraySize = width * height * 4
     // Convert chunk to a Uint8ClampedArray
 
-    const buffer = Buffer.from(chunk);
-    const arraySize = width * height * 4
+    const buffer = Buffer.concat([this.previousTail, chunk]);
+    if (buffer.length === arraySize) {
+      this.previousTail = Buffer.alloc(0);
+    } else {
+      this.previousTail = buffer;
+      callback();
+      return
+    }
+    // const buffer = Buffer.from(chunk);
     const myImg = createImageData(new Uint8ClampedArray(buffer), width, height);
     const canvas = createCanvas(width, height);
     const context = canvas.getContext('2d');
