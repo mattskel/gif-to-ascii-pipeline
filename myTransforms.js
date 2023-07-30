@@ -150,13 +150,24 @@ export class FrameHeaderTransform extends Transform {
           callback();
           return;
         }
-        if (this.subType === undefined) {
+        if (this.subType === undefined && buffer.length - index >= 1) {
           this.subType = buffer[index++];
+        } else {
+          this.previousTail = buffer.slice(index);
+          callback();
+          return;
         }
 
         // 0xf9 Graphic Control Extension
         if (this.subType === 0xf9) {
-          let subBlockLength = buffer[index++];
+          let subBlockLength;
+          if (buffer.length - index < subBlockLength) {
+            this.previousTail = buffer.slice(index);
+            callback();
+            return;
+          }
+
+          subBlockLength = buffer[index++];
           if (subBlockLength !== 0x04) {
             throw new Error('Invalid metadata block');
           }
