@@ -354,6 +354,9 @@ export class FrameImageTransform extends Transform {
   constructor(myObject, options) {
     super(options);
     this.myObject = myObject;
+
+    // Add a new array to buffer
+    this.myObject.frameBufferImageLengths = [];
   }
 
   _transform(chunk, encoding, callback) {
@@ -425,7 +428,10 @@ export class FrameImageTransform extends Transform {
         }
       }
 
-      this.push(Buffer.from(indexStream));
+      // Get the _buffer length before pushing
+      const frameBuffer = Buffer.from(indexStream)
+      this.myObject.frameBufferImageLengths.push(frameBuffer.length);
+      this.push(frameBuffer);
       callback();
     } else {
       // reached the end of the frame
@@ -537,9 +543,23 @@ export class ColorTransform extends Transform {
     // this.context = undefined;
     // this.canvas = undefined;
     this.frameBuffer = undefined;
+    this.previousTail = Buffer.alloc(0);
   }
 
   _transform(chunk, encoding, callback) {
+
+    const buffer = Buffer.concat([this.previousTail, chunk]);
+    if (this.chunkLength === undefined) {
+      this.chunkLength = this.gifObject.frameBufferImageLengths.shift();
+    }
+
+    if (this.chunkLength === buffer.length) {
+      this.previousTail = Buffer.alloc(0);
+      this.chunkLength = undefined;
+    } else {
+      this.previousTail = chunk;
+      callback();
+    }
 
     if (!this.frameBuffer) {
       const {width, height} = this.gifObject;
@@ -557,9 +577,9 @@ export class ColorTransform extends Transform {
     let y = top;
     const a = 255;
     const transparentColor = this.gifObject.transparentColors.shift();
-    for (let i = 0; i < chunk.length; i++) {
-      if (chunk[i] !== transparentColor) {
-        const colorIndex = chunk[i] * 3;
+    for (let i = 0; i < buffer.length; i++) {
+      if (buffer[i] !== transparentColor) {
+        const colorIndex = buffer[i] * 3;
         const [r, g, b] = this.gifObject.globalColorTable.slice(colorIndex, colorIndex + 3);
         // const rgbIndex = y * width * 4 + x * 4; // This line here is wrong and has screwed me over for hours
         const rgbIndex = y * this.width * 4 + x * 4;
@@ -576,78 +596,6 @@ export class ColorTransform extends Transform {
     }
 
     this.push(this.frameBuffer);
-    callback();
-  }
-}
-
-export class RGBTransform extends Transform {
-  constructor(gifObject, options) {
-    super(options);
-    this.gifObject = gifObject;
-  }
-
-  _transform(chunk, encoding, callback) {
-    const colorBuffer = Buffer.alloc(chunk.length * 3);
-    const transparentColor = this.gifObject.transparentColors.shift();
-    for (let i = 0; i < chunk.length; i++) {
-      let r, g, b;
-      if (chunk[i] !== transparentColor) {
-        const colorIndex = chunk[i] * 3;
-        [r, g, b] = this.gifObject.globalColorTable.slice(colorIndex, colorIndex + 3);
-        // add r, g, b to buffer
-        colorBuffer[i * 3] = r;
-        colorBuffer[i * 3 + 1] = g;
-        colorBuffer[i * 3 + 2] = b;
-        
-      }
-      x++;
-      if (x - left === width) {
-        x = left;
-        y++;
-      }
-    }
-    this.push(colorBuffer);
-    callback();
-  }
-}
-
-export class _CanvasTransform extends Transform {
-  constructor(gifObject, options) {
-    super(options);
-    this.gifObject = gifObject;
-    this.context = undefined;
-    this.canvas = undefined;
-  }
-
-  _transform(chunk, encoding, callback) {
-    if (!this.context) {
-      const {width, height} = this.gifObject;
-      const canvas = createCanvas(width, height);
-      this.context = canvas.getContext('2d');
-      this.canvas = canvas;
-    }
-
-    const imagePosition = this.gifObject.imagePositions.shift();
-    const {left = 0, top = 0, width, height} = (imagePosition)
-      ? imagePosition
-      : this.gifObject;
-
-
-    let x = left;
-    let y = top;
-    while (chunk.length) {
-      const [r, g, b] = chunk.splice(0, 3);
-      this.context.fillStyle = `rgb(${r}, ${g}, ${b})`;
-      this.context.fillRect(x, y, 1, 1);
-      x++;
-      if (x - left === width) {
-        x = left;
-        y++;
-      }
-    }
-
-    // this.push(Buffer.from(this.canvas.toDataURL('image/png')));
-    this.push(this.canvas.toBuffer('image/jpeg'), {quality: 0.5, progressive: false, chromaSubsampling: true});
     callback();
   }
 }
