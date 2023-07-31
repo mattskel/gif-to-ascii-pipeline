@@ -26,25 +26,33 @@
       var textArea = document.getElementById('whereTheTextGoes');
       var imgElement = document.getElementById('image');
       var myForm = document.getElementById('myForm');
+      let timeoutId;
       function loopAnimation(frames, delays) {
         var i = 0;
         var loop = function() {
           textArea.innerHTML = frames[i];
-          setTimeout(loop, delays[i] * 10);
+          timeoutId = setTimeout(loop, delays[i] * 10);
           i = (i + 1) % frames.length;
         }
         loop();
       }
 
+      function stopAnimation() {
+        clearTimeout(timeoutId);
+        timeoutId = undefined;
+      }
+
       myForm.addEventListener('submit', function(event) {
         event.preventDefault();
+
+        const formElement = event.target;
+        const {value: searchTerm} = formElement.querySelector('input[name="searchTerm"]')
 
         let frames = [];
         let frameIndex = 0;
         let prevBuffer;;
-        fetch('/submit', {
+        fetch(`/submit?searchTerm=${searchTerm}`, {
           method: 'GET',
-          query: {searchTerm: 'cat'},
         })
           .then((response) => response.body)
           .then((body) => {
@@ -58,43 +66,38 @@
             let previousBufferSize = undefined;
             function readStream() {
               return reader.read().then(({ done, value }) => {
-                // console.log('reader.read()');
                 if (!done && !value) {
                   return readStream();
                 }
 
                 if (done) {
-                  // console.log('done');
                   loopAnimation(frames, [...prevBuffer.subarray(4)]);
                   return;
                 }
 
-                // console.log('value.length', value.length);
                 let buffer = new Uint8Array([...previousTail, ...value]);
                 if (buffer.length < 4) {
                   previousTail = buffer;
-                  // return readStream();
                   return readStream();
                 }
 
                 const lengthArray = buffer.slice(0, 4);
                 const incomingBufferSize = (lengthArray[3] << 24) | (lengthArray[2] << 16) | (lengthArray[1] << 8) | lengthArray[0];
                 if (buffer.length < incomingBufferSize + 4) {
-                  // console.log('lengthArray', lengthArray);
-                  // console.log('if (buffer.length < incomingBufferSize + 4)', buffer.length, incomingBufferSize);
                   previousTail = buffer;
                   return readStream();
                 }
 
                 previousTail = new Uint8Array([]);
                 if (prevBuffer) {
-                  // console.log('prevBuffer.length', prevBuffer.length);
+                  // if (timeoutId) {
+                  //   clearTimeout(timeoutId);
+                  // }
+
                   const subArray = prevBuffer.subarray(4)
                   const stringValue = decoder.decode(subArray).toString();
                   textArea.innerHTML = stringValue;
-                  // console.log('count', count++);
                   frames.push(stringValue);
-                  // previousTail = new Uint8Array([]);
                 }
 
                 prevBuffer = buffer;
