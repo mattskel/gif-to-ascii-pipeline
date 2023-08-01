@@ -27,6 +27,19 @@ export class HeaderTransform extends Transform {
     this.myObject.width = gifWidth;
     const gifHeight = chunk.readUInt16LE(8);
     this.myObject.height = gifHeight;
+    console.log('gifWidth', gifWidth);
+    console.log('gifHeight', gifHeight);
+
+    const {widthCompression, heightCompression} = this.myObject;
+    console.log('widthCompression', widthCompression);
+    // const compressedWidth = gifWidth % widthCompression === 0 ? gifWidth / widthCompression : Math.floor(gifWidth / widthCompression) + 1;
+    const compressedWidth = (gifWidth - (gifWidth % widthCompression)) / widthCompression;
+    // const compressedHeight = gifHeight % heightCompression === 0 ? gifHeight / heightCompression : Math.floor(gifHeight / heightCompression) + 1;
+    const compressedHeight = (gifHeight - (gifHeight % heightCompression)) / heightCompression;
+    this.myObject.compressedWidth = compressedWidth;
+    this.myObject.compressedHeight = compressedHeight;
+    console.log('compressedWidth', compressedWidth);
+    console.log('compressedHeight', compressedHeight);
 
     const gifField = chunk.readUInt8(10);
     const colorTableStart = 10;
@@ -472,10 +485,12 @@ export class CompressionTransform extends Transform {
     const {width: _gifWidth, height: _gifHeight, widthCompression, heightCompression} = this.gifObject;
     const pixelSize = widthCompression;
     const pixelSizeHeight = heightCompression;
-    let compressions = Buffer.alloc((_gifWidth * _gifHeight)/(pixelSize * pixelSizeHeight));
+    
+    const {compressedWidth, compressedHeight} = this.gifObject;
+    let compressions = Buffer.alloc(compressedWidth * compressedHeight);
     let index = 0;
-    for (let i = 0; i < _gifHeight; i+=pixelSizeHeight) {
-      for (let j = 0; j < _gifWidth; j+=pixelSize) {
+    for (let i = 0; i <= _gifHeight - pixelSizeHeight; i+=pixelSizeHeight) {
+      for (let j = 0; j <= _gifWidth - pixelSize; j+=pixelSize) {
         let greySum = 0;
         for (let k = 0; k < pixelSizeHeight; k++) {
           for (let l = 0; l < pixelSize; l++) {
@@ -500,13 +515,14 @@ export class AsciiTransform extends Transform {
   }
 
   _transform(chunk, encoding, callback) {
-    const {width: _gifWidth, widthCompression} = this.gifObject;
+    const {compressedWidth, widthCompression} = this.gifObject;
+    console.log('compressedWidth', compressedWidth);
     const rows = [];
     let rowString = '';
     for (let i = 0; i < chunk.length; i++) {
       const asciiIndex = Math.round(chunk[i] / 255 * (asciiScale.length - 1));
       rowString = rowString + asciiScale[asciiIndex];
-      if ((i + 1) % (_gifWidth / widthCompression) === 0) {
+      if ((i + 1) % (compressedWidth) === 0) {
         rows.push(rowString);
         rowString = '';
       }
