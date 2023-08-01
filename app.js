@@ -16,15 +16,9 @@ import {
   CanvasTransform,
 } from './myTransforms.js';
 
-let frames = [];
-const myObject = {
-  // delayTimes: [], 
-  // imagePositions: [], 
-  // codeSizes: [],
-  // widthCompression: 5,
-  // heightCompression: 10,
-  // frames: [],
-};
+// let frames = [];
+// const myObject = {
+// };
 
 const app = express();
 const __dirname = path.resolve();
@@ -37,7 +31,8 @@ const fixedLength = 4;
 function myTransform(url, _res, io) {
   // frames = [];
   get(url, (res) => {
-    frames = [];
+    const frames = [];
+    const myObject = {};
     myObject.delayTimes = []; 
     myObject.imagePositions = [];
     myObject.codeSizes = [];
@@ -46,6 +41,7 @@ function myTransform(url, _res, io) {
     myObject.frames = [];
     myObject.canvasDataUrls = [];
     myObject.transparentColors = [];
+    myObject.comments = [];
     const frameStream = res  
       .pipe(new HeaderTransform(myObject))
       .pipe(new FrameHeaderTransform(myObject))

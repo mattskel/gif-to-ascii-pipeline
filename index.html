@@ -61,6 +61,10 @@
 
             let count = 0;
 
+            if (timeoutId) {
+              clearTimeout(timeoutId);
+            }
+
             let previousTail = new Uint8Array([]);
             let incomingBufferSize = undefined;
             let previousBufferSize = undefined;

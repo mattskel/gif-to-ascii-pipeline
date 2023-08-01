@@ -137,6 +137,7 @@ export class FrameHeaderTransform extends Transform {
   }
 
   _transform(chunk, encoding, callback) {
+    console.log('FrameHeaderTransform');
     let index = 0;
     const buffer = Buffer.concat([this.previousTail, chunk]);
     if (buffer.length < 1) {
@@ -165,14 +166,15 @@ export class FrameHeaderTransform extends Transform {
         }
         if (this.subType === undefined && buffer.length - index >= 1) {
           this.subType = buffer[index++];
-        } else {
-          this.previousTail = buffer.slice(index);
-          callback();
-          return;
+        // } else {
+        //   this.previousTail = buffer.slice(index);
+        //   callback();
+        //   return;
         }
 
         // 0xf9 Graphic Control Extension
         if (this.subType === 0xf9) {
+          console.log('Graphic Control Extension');
           let subBlockLength;
           if (buffer.length - index < subBlockLength) {
             this.previousTail = buffer.slice(index);
@@ -204,40 +206,69 @@ export class FrameHeaderTransform extends Transform {
           // this.subType = undefined;
         } else if (this.subType === 0xff) {
           // 0xff Application Extension
-          let subBlockLength = buffer[index++];
-          if (subBlockLength !== 0x0b) {
-            throw new Error('Invalid metadata block');
-          }
 
-          if (buffer.length - index < subBlockLength) {
+          if (buffer.length - index < 1) {
             this.previousTail = buffer.slice(index);
             callback();
             return;
           }
 
-          const appIdentifier = buffer.slice(index, index + 8);
-          index += 8;
-          const appAuthenticationCode = buffer.slice(index, index + 3);
-          index += 3;
-
-          if (appIdentifier.toString() === 'NETSCAPE') {
-            const subBlockLength = buffer[index++];
-            if (subBlockLength !== 0x03) {
-              throw new Error('Invalid metadata block');
-            }
-
-            const subBlockIdentifier = buffer[index++];
-            if (subBlockIdentifier !== 0x01) {
-              throw new Error('Invalid metadata block');
-            }
-
-            const loopCount = buffer[index++] | (buffer[index++] << 8);
-            this.myObject.loopCount = loopCount;
-            const terminator = buffer[index++];
-            if (terminator !== 0x00) {
-              throw new Error('Invalid metadata block');
-            }
+          let subBlockLength = buffer[index++];
+          while (subBlockLength !== 0x00 && buffer.length - index >= subBlockLength) {
+            index += subBlockLength;
+            subBlockLength = buffer[index++];
           }
+
+          if (subBlockLength !== 0x00) {
+            this.previousTail = buffer.slice(index);
+            callback();
+            return;
+          // } else {
+          //   this.subType = buffer[index++];
+          }
+          // if (subBlockLength !== 0x0b) {
+          //   throw new Error('Invalid metadata block');
+          // }
+
+          // if (buffer.length - index < subBlockLength) {
+          //   this.previousTail = buffer.slice(index);
+          //   callback();
+          //   return;
+          // }
+
+          // const appIdentifier = buffer.slice(index, index + 8);
+          // index += 8;
+          // const appAuthenticationCode = buffer.slice(index, index + 3);
+          // index += 3;
+
+          // if (appIdentifier.toString() === 'NETSCAPE') {
+          //   const subBlockLength = buffer[index++];
+          //   if (subBlockLength !== 0x03) {
+          //     throw new Error('Invalid metadata block');
+          //   }
+
+          //   const subBlockIdentifier = buffer[index++];
+          //   if (subBlockIdentifier !== 0x01) {
+          //     throw new Error('Invalid metadata block');
+          //   }
+
+          //   const loopCount = buffer[index++] | (buffer[index++] << 8);
+          //   this.myObject.loopCount = loopCount;
+          //   const terminator = buffer[index++];
+          //   if (terminator !== 0x00) {
+          //     throw new Error('Invalid metadata block');
+          //   }
+          // } else if (appIdentifier.toString() === 'XMP Data') {
+          //   // Find the end of the XMP data
+          //   let subBlockLength = buffer[index];
+          //   while (subBlockLength !== 0x00 && buffer.length - index >= subBlockLength) {
+          //     index += subBlockLength;
+          //     subBlockLength = buffer[index];
+          //   }
+
+          // }
+
+          console.log('Application Extension finished');
 
           // this.subType = undefined;
         } else if (this.subType === 0xfe) {
@@ -326,7 +357,11 @@ export class FrameHeaderTransform extends Transform {
 
         if (this.previousTail.length > 0) {
           this.previousTail = Buffer.alloc(0);
-        } else if (this.subBlockLength === undefined) {
+        // } else if (this.subBlockLength === undefined) {
+        //   this.subBlockLength = buffer[index++];
+        }
+
+        if (this.subBlockLength === undefined) {
           this.subBlockLength = buffer[index++];
         }
 
@@ -354,7 +389,7 @@ export class FrameHeaderTransform extends Transform {
         }
       }
       if (this.identifier !== undefined) {
-        // console.log(`!!!!! this.subBlockLength is ${this.subBlockLength} !!!!!`);
+        console.log(`!!!!! this.subBlockLength is ${this.subBlockLength} !!!!!`);
       }
     }
 
@@ -373,6 +408,7 @@ export class FrameImageTransform extends Transform {
   }
 
   _transform(chunk, encoding, callback) {
+    console.log('FrameImageTransform _transform called')
     const {codeSizes} = this.myObject;
     const subBlockLength = chunk.length;
     const indexStream = [];
@@ -516,7 +552,7 @@ export class AsciiTransform extends Transform {
 
   _transform(chunk, encoding, callback) {
     const {compressedWidth, widthCompression} = this.gifObject;
-    console.log('compressedWidth', compressedWidth);
+    // console.log('compressedWidth', compressedWidth);
     const rows = [];
     let rowString = '';
     for (let i = 0; i < chunk.length; i++) {
@@ -612,6 +648,7 @@ export class ColorTransform extends Transform {
       }
     }
 
+    console.log('ColorTransform')
     this.push(this.frameBuffer);
     callback();
   }

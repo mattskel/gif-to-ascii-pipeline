@@ -27,7 +27,6 @@ app.get('/submit', (req, res) => {
     'Content-Type': 'text/plain; charset=utf-8',
   });
   const {searchTerm} = req.query;
-  console.log(searchTerm);
   axios.get(`https://api.giphy.com/v1/gifs/search?api_key=${process.env.GIPHY_API_KEY}&q=${searchTerm}&limit=10`)
     .then((response) => {
       if (response.status !== 200) {
@@ -36,11 +35,14 @@ app.get('/submit', (req, res) => {
 
       const {data} = response.data;
       // const {id} = data[Math.floor(Math.random() * 10)];
-      // console.log(id);
       // const id = '3o72FfM5HJydzafgUE'; // fire
-      const id = 'v6aOjy0Qo1fIA' // cat; Not working for greyscale
+      // const id = 'v6aOjy0Qo1fIA' // cat; Not working for greyscale
       // const id = '26n7aDOiWJJckm2pq'; // dolphin Not working at all
       // const id = 'IL5j1z69Qi7NTLTL7j'; // eat drink enjoy
+      // const id = 'CiTLZWskt7Fu'; // Nick Cage Con air
+      const id = 'U3PFGB8kCBVf7EN4Fk'; // Dog splits not working
+      // const id = 'OLH834Zo34k9O'; // Jerri Blank fix for Application header
+      // console.log(id);
       myTransform(`https://media.giphy.com/media/${id}/giphy.gif`, res, io)
     });
 
