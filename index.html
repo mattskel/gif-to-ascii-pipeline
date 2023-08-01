@@ -37,9 +37,13 @@
         loop();
       }
 
-      function stopAnimation() {
-        clearTimeout(timeoutId);
+      function stopAnimation(timeoutId, frames) {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
         timeoutId = undefined;
+        frames = [];
+        // delays = [];
       }
 
       myForm.addEventListener('submit', function(event) {
@@ -60,10 +64,11 @@
             const decoder = new TextDecoder();
 
             let count = 0;
+            stopAnimation(timeoutId, frames);
 
-            if (timeoutId) {
-              clearTimeout(timeoutId);
-            }
+            // if (timeoutId) {
+            //   clearTimeout(timeoutId);
+            // }
 
             let previousTail = new Uint8Array([]);
             let incomingBufferSize = undefined;

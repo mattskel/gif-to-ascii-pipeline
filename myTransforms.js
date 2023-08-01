@@ -274,18 +274,21 @@ export class FrameHeaderTransform extends Transform {
         } else if (this.subType === 0xfe) {
           // 0xfe Comment Extension
           let subBlockLength = buffer[index++];
-          if (subBlockLength === 0x00) {
-            this.subType = undefined;
-          } else {
-            if (buffer.length - index < subBlockLength) {
-              this.previousTail = buffer.slice(index);
-              callback();
-              return;
-            }
-            const comment = buffer.slice(index, index + subBlockLength);
-            this.myObject.comments.push(comment.toString());
-            index += subBlockLength;
+          // if (subBlockLength === 0x00) {
+          //   this.subType = undefined;
+          // } else {
+          if (buffer.length - index < subBlockLength) {
+            this.previousTail = buffer.slice(index);
+            callback();
+            return;
           }
+          const comment = buffer.slice(index, index + subBlockLength);
+          this.myObject.comments.push(comment.toString());
+          index += subBlockLength;
+          if (buffer[index++] !== 0x00) {
+            throw new Error('Invalid metadata block');
+          }
+          // }
         } else if (this.subType === 0x01) {
           // 0x01 Plain Text Extension
           let subBlockLength = buffer[index++];
@@ -338,6 +341,7 @@ export class FrameHeaderTransform extends Transform {
           const height = buffer[index++] | (buffer[index++] << 8);
           this.myObject.imagePositions.push({left, top, width, height});
           const flags = buffer[index++];
+          // TODO Add the local color table info
         }
 
         // For now assume that the global color table is used
@@ -387,10 +391,18 @@ export class FrameHeaderTransform extends Transform {
           this.blocks = [];
           this.identifier = buffer[index++];
         }
+
+
       }
       if (this.identifier !== undefined) {
         console.log(`!!!!! this.subBlockLength is ${this.subBlockLength} !!!!!`);
       }
+
+      if (index > buffer.length) {
+        callback();
+        return;
+      }
+      
     }
 
     callback();

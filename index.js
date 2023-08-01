@@ -40,9 +40,11 @@ app.get('/submit', (req, res) => {
       // const id = '26n7aDOiWJJckm2pq'; // dolphin Not working at all
       // const id = 'IL5j1z69Qi7NTLTL7j'; // eat drink enjoy
       // const id = 'CiTLZWskt7Fu'; // Nick Cage Con air
-      const id = 'U3PFGB8kCBVf7EN4Fk'; // Dog splits not working
+      // const id = 'U3PFGB8kCBVf7EN4Fk'; // Dog splits not working
       // const id = 'OLH834Zo34k9O'; // Jerri Blank fix for Application header
-      // console.log(id);
+      const id = '11mwBM4qjFBBwA'; // Nirvana
+      // const id = '8vQSQ3cNXuDGo'
+      console.log(id);
       myTransform(`https://media.giphy.com/media/${id}/giphy.gif`, res, io)
     });
 
