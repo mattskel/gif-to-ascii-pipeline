@@ -42,6 +42,7 @@ function myTransform(url, _res, io) {
     myObject.canvasDataUrls = [];
     myObject.transparentColors = [];
     myObject.comments = [];
+    myObject.localColorTables = [];
     const frameStream = res  
       .pipe(new HeaderTransform(myObject))
       .pipe(new FrameHeaderTransform(myObject))

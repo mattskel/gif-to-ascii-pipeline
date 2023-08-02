@@ -27,19 +27,14 @@ export class HeaderTransform extends Transform {
     this.myObject.width = gifWidth;
     const gifHeight = chunk.readUInt16LE(8);
     this.myObject.height = gifHeight;
-    console.log('gifWidth', gifWidth);
-    console.log('gifHeight', gifHeight);
 
     const {widthCompression, heightCompression} = this.myObject;
-    console.log('widthCompression', widthCompression);
     // const compressedWidth = gifWidth % widthCompression === 0 ? gifWidth / widthCompression : Math.floor(gifWidth / widthCompression) + 1;
     const compressedWidth = (gifWidth - (gifWidth % widthCompression)) / widthCompression;
     // const compressedHeight = gifHeight % heightCompression === 0 ? gifHeight / heightCompression : Math.floor(gifHeight / heightCompression) + 1;
     const compressedHeight = (gifHeight - (gifHeight % heightCompression)) / heightCompression;
     this.myObject.compressedWidth = compressedWidth;
     this.myObject.compressedHeight = compressedHeight;
-    console.log('compressedWidth', compressedWidth);
-    console.log('compressedHeight', compressedHeight);
 
     const gifField = chunk.readUInt8(10);
     const colorTableStart = 10;
@@ -137,7 +132,6 @@ export class FrameHeaderTransform extends Transform {
   }
 
   _transform(chunk, encoding, callback) {
-    console.log('FrameHeaderTransform');
     let index = 0;
     const buffer = Buffer.concat([this.previousTail, chunk]);
     if (buffer.length < 1) {
@@ -174,7 +168,6 @@ export class FrameHeaderTransform extends Transform {
 
         // 0xf9 Graphic Control Extension
         if (this.subType === 0xf9) {
-          console.log('Graphic Control Extension');
           let subBlockLength;
           if (buffer.length - index < subBlockLength) {
             this.previousTail = buffer.slice(index);
@@ -193,7 +186,9 @@ export class FrameHeaderTransform extends Transform {
             return;
           }
 
+          // TODO Need to read in the options
           const options = buffer[index++];
+
           const delayTime = buffer[index++] | (buffer[index++] << 8);
           this.myObject.delayTimes.push(delayTime);
           const transparentColor = buffer[index++];
@@ -268,8 +263,6 @@ export class FrameHeaderTransform extends Transform {
 
           // }
 
-          console.log('Application Extension finished');
-
           // this.subType = undefined;
         } else if (this.subType === 0xfe) {
           // 0xfe Comment Extension
@@ -334,14 +327,35 @@ export class FrameHeaderTransform extends Transform {
           return;
         }
         
-        if (this.subBlockLength === undefined && this.blocks.length === 0) {
+        if (this.subBlockLength === undefined && !this.localColorTableFlags) {
           const left = buffer[index++] | (buffer[index++] << 8);
           const top = buffer[index++] | (buffer[index++] << 8);
           const width = buffer[index++] | (buffer[index++] << 8);
           const height = buffer[index++] | (buffer[index++] << 8);
           this.myObject.imagePositions.push({left, top, width, height});
           const flags = buffer[index++];
-          // TODO Add the local color table info
+          this.localColorTableFlags = flags.toString(2).padStart(8, '0')
+          this.hasLocalColorTable = this.localColorTableFlags[0] === '1';
+        }
+
+        // TODO Add the local color table info
+        if (this.hasLocalColorTable && this.localColorTable === undefined) {
+          const sizeOfLocalColorTable = this.localColorTableFlags.slice(5, 8);
+          const sizeOfLocalColorTableInt = parseInt(sizeOfLocalColorTable, 2);
+          const sizeOfLocalColorTableInBytes = 2 ** (sizeOfLocalColorTableInt + 1);
+          const sizeOfLocalColorTableInBytes3 = 3 * sizeOfLocalColorTableInBytes;
+          if (buffer.length - index < sizeOfLocalColorTableInBytes3) {
+            this.previousTail = buffer.slice(index);
+            callback();
+            return;
+          }
+
+          this.localColorTable = buffer.slice(index, index + sizeOfLocalColorTableInBytes3);
+          index += sizeOfLocalColorTableInBytes3;
+          // this.myObject.localColorTables.push(localColorTable);
+          // this.hasLocalColorTable = false;
+        // } else {
+        //   this.myObject.localColorTables.push(undefined);
         }
 
         // For now assume that the global color table is used
@@ -386,10 +400,24 @@ export class FrameHeaderTransform extends Transform {
 
         if (this.subBlockLength === 0) {
           const _buffer = Buffer.concat(this.blocks);
-          this.push(_buffer);
+          // this.push(_buffer);
           this.subBlockLength = undefined;
           this.blocks = [];
           this.identifier = buffer[index++];
+
+          // Clear out local color table info
+          this.myObject.localColorTables.push(this.localColorTable);
+          this.hasLocalColorTable = false;
+          this.localColorTable = undefined;
+          this.localColorTableFlags = undefined;
+
+          /** 
+           * Have to be really careful where you put these 
+           * Previously was before I updated the local color table
+           * It was reaching the ColorTransform block and thinking it was the local color table
+           */
+
+          this.push(_buffer);
         }
 
 
@@ -420,7 +448,6 @@ export class FrameImageTransform extends Transform {
   }
 
   _transform(chunk, encoding, callback) {
-    console.log('FrameImageTransform _transform called')
     const {codeSizes} = this.myObject;
     const subBlockLength = chunk.length;
     const indexStream = [];
@@ -564,7 +591,6 @@ export class AsciiTransform extends Transform {
 
   _transform(chunk, encoding, callback) {
     const {compressedWidth, widthCompression} = this.gifObject;
-    // console.log('compressedWidth', compressedWidth);
     const rows = [];
     let rowString = '';
     for (let i = 0; i < chunk.length; i++) {
@@ -642,10 +668,13 @@ export class ColorTransform extends Transform {
     let y = top;
     const a = 255;
     const transparentColor = this.gifObject.transparentColors.shift();
+    const localColorTable = this.gifObject.localColorTables.shift();
+    const globalColorTable = this.gifObject.globalColorTable;
+    const colorTable = localColorTable || globalColorTable;
     for (let i = 0; i < buffer.length; i++) {
       if (buffer[i] !== transparentColor) {
         const colorIndex = buffer[i] * 3;
-        const [r, g, b] = this.gifObject.globalColorTable.slice(colorIndex, colorIndex + 3);
+        const [r, g, b] = colorTable.slice(colorIndex, colorIndex + 3);
         // const rgbIndex = y * width * 4 + x * 4; // This line here is wrong and has screwed me over for hours
         const rgbIndex = y * this.width * 4 + x * 4;
         this.frameBuffer[rgbIndex] = r;
@@ -660,7 +689,6 @@ export class ColorTransform extends Transform {
       }
     }
 
-    console.log('ColorTransform')
     this.push(this.frameBuffer);
     callback();
   }
