@@ -34,7 +34,7 @@ app.get('/submit', (req, res) => {
       }
 
       const {data} = response.data;
-      // const {id} = data[Math.floor(Math.random() * 10)];
+      const {id} = data[Math.floor(Math.random() * 10)];
       // const id = '3o72FfM5HJydzafgUE'; // fire
       // const id = 'v6aOjy0Qo1fIA' // cat; Not working for greyscale
       // const id = '26n7aDOiWJJckm2pq'; // dolphin Not working at all
@@ -42,8 +42,9 @@ app.get('/submit', (req, res) => {
       // const id = 'CiTLZWskt7Fu'; // Nick Cage Con air
       // const id = 'U3PFGB8kCBVf7EN4Fk'; // Dog splits not working
       // const id = 'OLH834Zo34k9O'; // Jerri Blank fix for Application header
-      const id = '11mwBM4qjFBBwA'; // Nirvana
+      // const id = '11mwBM4qjFBBwA'; // Nirvana
       // const id = '8vQSQ3cNXuDGo'
+      // const id = '3pZipqyo1sqHDfJGtz'; // Elmo. Might need to test this one...
       console.log(id);
       myTransform(`https://media.giphy.com/media/${id}/giphy.gif`, res, io)
     });
