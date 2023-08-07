@@ -15,7 +15,7 @@
   <body>
     <div>
       <form id="myForm">
-        <input type="text" name="searchTerm" autocomplete="off" /><button>Send</button>
+        <input type="text" name="searchTerm" autocomplete="off" /><button name="send">Send</button>
       </form>  
       <div id="whereTheTextGoes" style="font-size: 1.25em; line-height: 0.66em"></div>
       <img id="image" src="" alt="PNG Image">
@@ -27,10 +27,15 @@
       var imgElement = document.getElementById('image');
       var myForm = document.getElementById('myForm');
       let timeoutId;
+      let colorUrls = [];
       function loopAnimation(frames, delays) {
         var i = 0;
         var loop = function() {
           textArea.innerHTML = frames[i];
+          const url = colorUrls[i];
+          if (url) {
+            imgElement.src = url;
+          }
           timeoutId = setTimeout(loop, delays[i] * 10);
           i = (i + 1) % frames.length;
         }
@@ -44,11 +49,16 @@
         timeoutId = undefined;
         frames = [];
         // delays = [];
+        // colorUrls = []; // You can't put this here. The color image comes back before the fetch returns
       }
 
       myForm.addEventListener('submit', function(event) {
         event.preventDefault();
 
+        // disable the form so that it can't be changed while we're sending
+        myForm.elements.searchTerm.disabled = true;
+        myForm.elements.send.disabled = true;
+        colorUrls = [];
         const formElement = event.target;
         const {value: searchTerm} = formElement.querySelector('input[name="searchTerm"]')
 
@@ -80,6 +90,9 @@
                 }
 
                 if (done) {
+                  // enable the form again
+                  myForm.elements.searchTerm.disabled = false;
+                  myForm.elements.send.disabled = false;
                   loopAnimation(frames, [...prevBuffer.subarray(4)]);
                   return;
                 }
@@ -107,6 +120,10 @@
                   const stringValue = decoder.decode(subArray).toString();
                   textArea.innerHTML = stringValue;
                   frames.push(stringValue);
+                  const url = colorUrls[frames.length - 1];
+                  if (url) {
+                    imgElement.src = url;
+                  }
                 }
 
                 prevBuffer = buffer;
@@ -126,7 +143,8 @@
 
       socket.on('colorFrame', (url) => {
         // console.log('colorFrame');
-        imgElement.src = url;
+        // imgElement.src = url;
+        colorUrls.push(url);
       });
     </script>
   </body>
