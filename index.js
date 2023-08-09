@@ -26,15 +26,17 @@ app.get('/submit', (req, res) => {
   res.writeHead(200, {
     'Content-Type': 'text/plain; charset=utf-8',
   });
+  const limit = 25;
   const {searchTerm} = req.query;
-  axios.get(`https://api.giphy.com/v1/gifs/search?api_key=${process.env.GIPHY_API_KEY}&q=${searchTerm}&limit=10`)
+  axios.get(`https://api.giphy.com/v1/gifs/search?api_key=${process.env.GIPHY_API_KEY}&q=${searchTerm}&limit=${limit}`)
     .then((response) => {
       if (response.status !== 200) {
         // Something went wrong
       }
 
       const {data} = response.data;
-      const {id} = data[Math.floor(Math.random() * 10)];
+      console.log('data.length', data.length);
+      const {id} = data[Math.floor(Math.random() * Math.min(data.length, limit))];
       // const id = '3o72FfM5HJydzafgUE'; // fire
       // const id = 'v6aOjy0Qo1fIA' // cat; Not working for greyscale
       // const id = '26n7aDOiWJJckm2pq'; // dolphin Not working at all
@@ -45,6 +47,8 @@ app.get('/submit', (req, res) => {
       // const id = '11mwBM4qjFBBwA'; // Nirvana
       // const id = '8vQSQ3cNXuDGo'
       // const id = '3pZipqyo1sqHDfJGtz'; // Elmo. Might need to test this one...
+      // const id = 'L2VTMlN4SqWlO'; // Plasmo... Nuff said
+      // const id = 'nR4L10XlJcSeQ'
       console.log(id);
       myTransform(`https://media.giphy.com/media/${id}/giphy.gif`, res, io)
     });
