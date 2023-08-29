@@ -9,7 +9,6 @@
         white-space: pre-wrap;
         background: black;
         color: white;
-        /* font-size: 0.5em; */
       }
 
       .container {
@@ -83,7 +82,6 @@
         const {value: searchTerm} = formElement.querySelector('input[name="searchTerm"]')
 
         let frames = [];
-        // let frameIndex = 0;
         let prevBuffer;;
         fetch(`/submit?searchTerm=${searchTerm}`, {
           method: 'GET',
@@ -149,13 +147,7 @@
 
       })
 
-      // socket.on('frame', (frame) => {
-      //   textArea.innerHTML = frame;
-      // });
-
       socket.on('colorFrame', (url) => {
-        // console.log('colorFrame');
-        // imgElement.src = url;
         colorUrls.push(url);
       });
     </script>

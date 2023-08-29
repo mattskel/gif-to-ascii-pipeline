@@ -1,9 +1,7 @@
 import { Transform } from 'stream';
 import { createCanvas, createImageData, Image } from 'canvas';
 
-// const asciiScale = ' .,:ilwW'
 const asciiScale = ' .,:;irsXA253hMHGS#9B&@';
-// const asciiScale = '@#%*+=-:. ';
 
 export class HeaderTransform extends Transform {
   constructor(
@@ -160,10 +158,6 @@ export class FrameHeaderTransform extends Transform {
         }
         if (this.subType === undefined && buffer.length - index >= 1) {
           this.subType = buffer[index++];
-        // } else {
-        //   this.previousTail = buffer.slice(index);
-        //   callback();
-        //   return;
         }
 
         // 0xf9 Graphic Control Extension
@@ -198,10 +192,7 @@ export class FrameHeaderTransform extends Transform {
             throw new Error('Invalid metadata block');
           }
 
-          // this.subType = undefined;
         } else if (this.subType === 0xff) {
-          // 0xff Application Extension
-
           if (buffer.length - index < 1) {
             this.previousTail = buffer.slice(index);
             callback();
@@ -218,58 +209,11 @@ export class FrameHeaderTransform extends Transform {
             this.previousTail = buffer.slice(index);
             callback();
             return;
-          // } else {
-          //   this.subType = buffer[index++];
           }
-          // if (subBlockLength !== 0x0b) {
-          //   throw new Error('Invalid metadata block');
-          // }
 
-          // if (buffer.length - index < subBlockLength) {
-          //   this.previousTail = buffer.slice(index);
-          //   callback();
-          //   return;
-          // }
-
-          // const appIdentifier = buffer.slice(index, index + 8);
-          // index += 8;
-          // const appAuthenticationCode = buffer.slice(index, index + 3);
-          // index += 3;
-
-          // if (appIdentifier.toString() === 'NETSCAPE') {
-          //   const subBlockLength = buffer[index++];
-          //   if (subBlockLength !== 0x03) {
-          //     throw new Error('Invalid metadata block');
-          //   }
-
-          //   const subBlockIdentifier = buffer[index++];
-          //   if (subBlockIdentifier !== 0x01) {
-          //     throw new Error('Invalid metadata block');
-          //   }
-
-          //   const loopCount = buffer[index++] | (buffer[index++] << 8);
-          //   this.myObject.loopCount = loopCount;
-          //   const terminator = buffer[index++];
-          //   if (terminator !== 0x00) {
-          //     throw new Error('Invalid metadata block');
-          //   }
-          // } else if (appIdentifier.toString() === 'XMP Data') {
-          //   // Find the end of the XMP data
-          //   let subBlockLength = buffer[index];
-          //   while (subBlockLength !== 0x00 && buffer.length - index >= subBlockLength) {
-          //     index += subBlockLength;
-          //     subBlockLength = buffer[index];
-          //   }
-
-          // }
-
-          // this.subType = undefined;
         } else if (this.subType === 0xfe) {
           // 0xfe Comment Extension
           let subBlockLength = buffer[index++];
-          // if (subBlockLength === 0x00) {
-          //   this.subType = undefined;
-          // } else {
           if (buffer.length - index < subBlockLength) {
             this.previousTail = buffer.slice(index);
             callback();
@@ -281,7 +225,6 @@ export class FrameHeaderTransform extends Transform {
           if (buffer[index++] !== 0x00) {
             throw new Error('Invalid metadata block');
           }
-          // }
         } else if (this.subType === 0x01) {
           // 0x01 Plain Text Extension
           let subBlockLength = buffer[index++];
@@ -352,15 +295,10 @@ export class FrameHeaderTransform extends Transform {
 
           this.localColorTable = buffer.slice(index, index + sizeOfLocalColorTableInBytes3);
           index += sizeOfLocalColorTableInBytes3;
-          // this.myObject.localColorTables.push(localColorTable);
-          // this.hasLocalColorTable = false;
-        // } else {
-        //   this.myObject.localColorTables.push(undefined);
         }
 
         // For now assume that the global color table is used
         // But in future will have to account for the size of the colour table here
-
         if (buffer.length - index < 2) {
           this.previousTail = buffer.slice(index);
           callback();
@@ -375,14 +313,11 @@ export class FrameHeaderTransform extends Transform {
 
         if (this.previousTail.length > 0) {
           this.previousTail = Buffer.alloc(0);
-        // } else if (this.subBlockLength === undefined) {
-        //   this.subBlockLength = buffer[index++];
         }
 
         if (this.subBlockLength === undefined) {
           this.subBlockLength = buffer[index++];
         }
-
 
         while (this.subBlockLength !== undefined && this.subBlockLength !== 0) {
           if (buffer.length - index < this.subBlockLength) {
@@ -400,7 +335,6 @@ export class FrameHeaderTransform extends Transform {
 
         if (this.subBlockLength === 0) {
           const _buffer = Buffer.concat(this.blocks);
-          // this.push(_buffer);
           this.subBlockLength = undefined;
           this.blocks = [];
           this.identifier = buffer[index++];
@@ -416,14 +350,10 @@ export class FrameHeaderTransform extends Transform {
            * Previously was before I updated the local color table
            * It was reaching the ColorTransform block and thinking it was the local color table
            */
-
           this.push(_buffer);
         }
 
 
-      }
-      if (this.identifier !== undefined) {
-        console.log(`!!!!! this.subBlockLength is ${this.subBlockLength} !!!!!`);
       }
 
       if (index > buffer.length) {
@@ -603,7 +533,6 @@ export class AsciiTransform extends Transform {
     }
     this.push(rows.join('\n'));
     callback();
-    
   }
 }
 
@@ -622,7 +551,6 @@ export class PulseTransform extends Transform {
     setTimeout(() => {
       callback();
     }, delay * 10);
-    // callback();
   }
 }
 
@@ -630,14 +558,11 @@ export class ColorTransform extends Transform {
   constructor(gifObject, options) {
     super(options);
     this.gifObject = gifObject;
-    // this.context = undefined;
-    // this.canvas = undefined;
     this.frameBuffer = undefined;
     this.previousTail = Buffer.alloc(0);
   }
 
   _transform(chunk, encoding, callback) {
-
     const buffer = Buffer.concat([this.previousTail, chunk]);
     if (this.chunkLength === undefined) {
       this.chunkLength = this.gifObject.frameBufferImageLengths.shift();
@@ -714,7 +639,6 @@ export class CanvasTransform extends Transform {
       callback();
       return
     }
-    // const buffer = Buffer.from(chunk);
     const myImg = createImageData(new Uint8ClampedArray(buffer), width, height);
     const canvas = createCanvas(width, height);
     const context = canvas.getContext('2d');
@@ -722,7 +646,6 @@ export class CanvasTransform extends Transform {
 
     const dataUrl = canvas.toDataURL('image/png');
     this.push(dataUrl);
-    // this.push(canvas.toBuffer('image/png', {quality: 0.5}));
     callback();
   }
 }
