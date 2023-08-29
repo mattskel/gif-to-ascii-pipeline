@@ -15,9 +15,8 @@ const io = new Server(server);
 // app.use(bodyParser.urlencoded({ extended: true }));
 
 app.get('/', (req, res) => {
-  // res.send('<h1>Hello world</h1>');
   res.sendFile(__dirname + '/index.html');
-  // myTransform('https://media.giphy.com/media/vz0K0DWTspyQmDS7Tv/giphy.gif', io)
+  // myTransform('https://media.giphy.com/media/p05Cn7nC8x2Jq/giphy.gif',res, io)
 });
 
 // let transform;
