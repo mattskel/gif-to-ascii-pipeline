@@ -1,9 +1,5 @@
 import {get} from 'https';
-import http from 'http';
 import express from 'express';
-import path from 'path';
-import {Server} from 'socket.io';
-import { Transform } from 'stream';
 import { 
   HeaderTransform, 
   FrameHeaderTransform, 
@@ -16,20 +12,8 @@ import {
   CanvasTransform,
 } from './myTransforms.js';
 
-// let frames = [];
-// const myObject = {
-// };
-
-const app = express();
-const __dirname = path.resolve();
-const server = http.createServer(app);
 const fixedLength = 4;
-// const io = new Server(server);
-
-// get('https://media.giphy.com/media/8YNxrDHjOFE7qZKXS5/giphy.gif', (res) => {
-// get('https://media.giphy.com/media/3o7527pa7qs9kCG78A/giphy.gif', (res) => {
 function myTransform(url, _res, io) {
-  // frames = [];
   get(url, (res) => {
     const frames = [];
     const myObject = {};
@@ -84,13 +68,3 @@ function myTransform(url, _res, io) {
 }
 
 export default myTransform;
-
-
-
-// app.get('/', (req, res) => {
-//   res.sendFile(__dirname + '/index.html');
-// });
-
-// server.listen(3000, () => {
-//   console.log('listening on *:3000');
-// });
