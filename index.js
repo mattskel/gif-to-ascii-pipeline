@@ -25,7 +25,12 @@ app.get('/submit', (req, res) => {
         // Something went wrong
       }
       const {data} = response.data;
-      // TODO test bad gif id jxzEhHBMmH7tm
+
+      /**
+       * TODO: Fix bad ids
+       * jxzEhHBMmH7tm
+       * 1GoHMc7DyBqQE
+       */
       const {id} = data[Math.floor(Math.random() * Math.min(data.length, limit))];
       console.log(id);
       myTransform(`https://media.giphy.com/media/${id}/giphy.gif`, res, io)

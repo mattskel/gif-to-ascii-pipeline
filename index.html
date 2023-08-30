@@ -9,6 +9,8 @@
         white-space: pre-wrap;
         background: black;
         color: white;
+        display: flex;
+        justify-content: center;
       }
 
       .container {
@@ -18,8 +20,17 @@
         width: auto;
       }
 
-      #gifForm {
+      .form-container {
         display: flex;
+        flex-direction: column;
+      }
+
+      .field-container {
+        display: flex;
+      }
+
+      .error-message {
+        color: red;
       }
 
       #image {
@@ -34,9 +45,13 @@
       <p>The following parses a .gif file using node streams</p>
       <p>Each frame in the .gif is decompressed using the the LWZ algorithm. Every pixel is converted to greyscale and then assigned an ascii character.</p>
       <p>The frames are then rendered as an ascii representation of the original .gif. For comparison, the original colour frames are rendered also</p>
-      <p>The animations synced</p>
-      <form id="gifForm">
-        <input type="text" name="searchTerm" autocomplete="off" /><button name="send">Send</button>
+      <p>The animations are synced for comparison</p>
+      <form id="gifForm" class="form-container">
+        <div class="field-container">
+          <input type="text" name="searchTerm" autocomplete="off" /><button name="send">Send</button>
+        </div>
+        <!-- Add an error message that i can hide and show if the server returns an error -->
+        <span id="errorMessage" class="error-message" hidden="hidden">Something went wrong on the server. Try again.</span>
       </form>
       <div id="whereTheTextGoes" style="font-size: 0.5em; line-height: 0.66em"></div>
       <img id="image" alt="PNG Image">
@@ -47,6 +62,7 @@
       var textArea = document.getElementById('whereTheTextGoes');
       var imgElement = document.getElementById('image');
       var gifForm = document.getElementById('gifForm');
+      var errorMessage = document.getElementById('errorMessage');
       let timeoutId;
       let colorUrls = [];
       let frames = [];
@@ -74,9 +90,15 @@
 
       gifForm.addEventListener('submit', function(event) {
         event.preventDefault();
+
+        // Remove the error message if it exists
+        errorMessage.setAttribute('hidden', 'hidden')
         
+        // Stop the animation currently running
         stopAnimation(timeoutId);
+
         // disable the form so that it can't be changed while we're sending
+        // And reset the frame arrays to empty
         gifForm.elements.searchTerm.disabled = true;
         gifForm.elements.send.disabled = true;
         colorUrls = [];
@@ -84,13 +106,14 @@
         const formElement = event.target;
         const {value: searchTerm} = formElement.querySelector('input[name="searchTerm"]')
 
-        let prevBuffer;;
+        let prevBuffer;
         fetch(`/submit?searchTerm=${searchTerm}`, {
           method: 'GET',
         })
           .then((response) => {
             if (response.status !== 200) {
-              throw new Error('Something went wrong on api server!');
+              throw new Error('Something went wrong on the server!');
+              errorMessage.removeAttribute('hidden')
             }
 
             return response.json();
@@ -101,7 +124,6 @@
             gifForm.elements.send.disabled = false;
           })
           .catch((error) => {
-            console.error(error);
             // enable the form again
             gifForm.elements.searchTerm.disabled = false;
             gifForm.elements.send.disabled = false;
