@@ -49,6 +49,8 @@
       var gifForm = document.getElementById('gifForm');
       let timeoutId;
       let colorUrls = [];
+      let frames = [];
+
       function loopAnimation(frames, delays) {
         var i = 0;
         var loop = function() {
@@ -63,36 +65,48 @@
         loop();
       }
 
-      function stopAnimation(timeoutId, frames) {
+      function stopAnimation(timeoutId) {
         if (timeoutId) {
           clearTimeout(timeoutId);
         }
         timeoutId = undefined;
-        frames = [];
+        // frames = [];
       }
 
       gifForm.addEventListener('submit', function(event) {
         event.preventDefault();
-
+        
+        stopAnimation(timeoutId);
         // disable the form so that it can't be changed while we're sending
         gifForm.elements.searchTerm.disabled = true;
         gifForm.elements.send.disabled = true;
         colorUrls = [];
+        frames = [];
         const formElement = event.target;
         const {value: searchTerm} = formElement.querySelector('input[name="searchTerm"]')
 
-        let frames = [];
         let prevBuffer;;
         fetch(`/submit?searchTerm=${searchTerm}`, {
           method: 'GET',
         })
-          .then((response) => response.body)
-          .then((body) => {
+          .then((response) => {
+            if (response.status !== 200) {
+              throw new Error('Something went wrong on api server!');
+            }
+
+            return response.json();
+          })
+          .then((data) => {
+            loopAnimation(frames, data);
+            gifForm.elements.searchTerm.disabled = false;
+            gifForm.elements.send.disabled = false;
+            /*
+            console.log('body', body);
             const reader = body.getReader();
             const decoder = new TextDecoder();
 
             let count = 0;
-            stopAnimation(timeoutId, frames);
+            
 
             let previousTail = new Uint8Array([]);
             let incomingBufferSize = undefined;
@@ -143,12 +157,25 @@
 
             // Start reading the streamed data
             return readStream();
+            */
           })
+          .catch((error) => {
+            console.error(error);
+            // enable the form again
+            gifForm.elements.searchTerm.disabled = false;
+            gifForm.elements.send.disabled = false;
+          });
 
       })
 
+      socket.on('asciiFrame', (frame) => {
+        frames.push(frame);
+        textArea.innerHTML = frame;
+      });
+
       socket.on('colorFrame', (url) => {
         colorUrls.push(url);
+        imgElement.src = url;
       });
     </script>
   </body>
