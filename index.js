@@ -1,7 +1,6 @@
 import express from 'express';
 import axios from 'axios';
 import 'dotenv/config'
-import bodyParser from 'body-parser';
 import path from 'path';
 import http from 'http';
 import {Server} from 'socket.io';
@@ -17,9 +16,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/submit', (req, res) => {
-  res.writeHead(200, {
-    'Content-Type': 'text/plain; charset=utf-8',
-  });
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8'); 
   const limit = 25;
   const {searchTerm} = req.query;
   axios.get(`https://api.giphy.com/v1/gifs/search?api_key=${process.env.GIPHY_API_KEY}&q=${searchTerm}&limit=${limit}`)
@@ -27,9 +24,13 @@ app.get('/submit', (req, res) => {
       if (response.status !== 200) {
         // Something went wrong
       }
-
       const {data} = response.data;
-      console.log('data.length', data.length);
+
+      /**
+       * TODO: Fix bad ids
+       * jxzEhHBMmH7tm
+       * 1GoHMc7DyBqQE
+       */
       const {id} = data[Math.floor(Math.random() * Math.min(data.length, limit))];
       console.log(id);
       myTransform(`https://media.giphy.com/media/${id}/giphy.gif`, res, io)
