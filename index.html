@@ -70,7 +70,6 @@
           clearTimeout(timeoutId);
         }
         timeoutId = undefined;
-        // frames = [];
       }
 
       gifForm.addEventListener('submit', function(event) {
@@ -100,64 +99,6 @@
             loopAnimation(frames, data);
             gifForm.elements.searchTerm.disabled = false;
             gifForm.elements.send.disabled = false;
-            /*
-            console.log('body', body);
-            const reader = body.getReader();
-            const decoder = new TextDecoder();
-
-            let count = 0;
-            
-
-            let previousTail = new Uint8Array([]);
-            let incomingBufferSize = undefined;
-            let previousBufferSize = undefined;
-            function readStream() {
-              return reader.read().then(({ done, value }) => {
-                if (!done && !value) {
-                  return readStream();
-                }
-
-                if (done) {
-                  // enable the form again
-                  gifForm.elements.searchTerm.disabled = false;
-                  gifForm.elements.send.disabled = false;
-                  loopAnimation(frames, [...prevBuffer.subarray(4)]);
-                  return;
-                }
-
-                let buffer = new Uint8Array([...previousTail, ...value]);
-                if (buffer.length < 4) {
-                  previousTail = buffer;
-                  return readStream();
-                }
-
-                const lengthArray = buffer.slice(0, 4);
-                const incomingBufferSize = (lengthArray[3] << 24) | (lengthArray[2] << 16) | (lengthArray[1] << 8) | lengthArray[0];
-                if (buffer.length < incomingBufferSize + 4) {
-                  previousTail = buffer;
-                  return readStream();
-                }
-
-                previousTail = new Uint8Array([]);
-                if (prevBuffer) {
-                  const subArray = prevBuffer.subarray(4)
-                  const stringValue = decoder.decode(subArray).toString();
-                  textArea.innerHTML = stringValue;
-                  frames.push(stringValue);
-                  const url = colorUrls[frames.length - 1];
-                  if (url) {
-                    imgElement.src = url;
-                  }
-                }
-
-                prevBuffer = buffer;
-                return readStream();
-              });
-            }
-
-            // Start reading the streamed data
-            return readStream();
-            */
           })
           .catch((error) => {
             console.error(error);
@@ -165,7 +106,6 @@
             gifForm.elements.searchTerm.disabled = false;
             gifForm.elements.send.disabled = false;
           });
-
       })
 
       socket.on('asciiFrame', (frame) => {

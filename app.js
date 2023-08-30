@@ -1,5 +1,4 @@
 import {get} from 'https';
-// import express from 'express';
 import { 
   HeaderTransform, 
   FrameHeaderTransform, 
@@ -13,7 +12,6 @@ import {
 } from './myTransforms.js';
 import { pipeline } from 'stream';
 
-const fixedLength = 4;
 function myTransform(url, _res, io) {
   get(url, (res) => {
     const frames = [];
@@ -28,18 +26,7 @@ function myTransform(url, _res, io) {
     myObject.transparentColors = [];
     myObject.comments = [];
     myObject.localColorTables = [];
-    // const frameStream = res  
-    //   .pipe(new HeaderTransform(myObject))
-    //   .pipe(new FrameHeaderTransform(myObject))
-    //   .pipe(new FrameImageTransform(myObject))
-    //   .pipe(new ColorTransform(myObject))
-    //   .on('error', (err) => {
-    //     _res.status(500).send({ error: 'something blew up' })
-    //     _res.end();
 
-    //     return;
-    //   });
-    // _res.status(200);
     const frameStream = pipeline(
       res,  
       new HeaderTransform(myObject),
@@ -52,7 +39,7 @@ function myTransform(url, _res, io) {
         }
 
         console.log('err', err);
-        _res.status(500).json({ error: 'something blew up' })
+        _res.status(500).send({ error: 'something blew up' })
         _res.end();
       }
     );
@@ -69,19 +56,12 @@ function myTransform(url, _res, io) {
       .pipe(new AsciiTransform(myObject))
       .pipe(new PulseTransform(myObject, frames))
       .on('data', (data) => {
-        // const buffer = Buffer.allocUnsafe(fixedLength);
-        // buffer.writeInt32LE(data.length, 0);
-        // _res.write(Buffer.concat([buffer, data]))
         io.emit('asciiFrame', data.toString());
       })
       .on('finish', () => {
         // need to extract the delays from the frames
         const delays = frames
           .map(({delay}) => delay);
-
-        // const buffer = Buffer.allocUnsafe(fixedLength);
-        // buffer.writeInt32LE(delays.length, 0);
-        // _res.write(Buffer.concat([buffer, new Uint8Array(delays)]));
         _res.status(200).send(delays)
         _res.end();
       })
