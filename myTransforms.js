@@ -25,22 +25,15 @@ export class HeaderTransform extends Transform {
     this.myObject.width = gifWidth;
     const gifHeight = chunk.readUInt16LE(8);
     this.myObject.height = gifHeight;
-    console.log('gifWidth', gifWidth);
 
-    // const {widthCompression, heightCompression} = this.myObject;
     const characterSize = 5.75;
     const viewWidth = 400;
     const compression = Math.floor(characterSize * gifWidth / viewWidth);
-    console.log('compression', compression);
-    // const compressedWidth = gifWidth % widthCompression === 0 ? gifWidth / widthCompression : Math.floor(gifWidth / widthCompression) + 1;
     const compressedWidth = (gifWidth - (gifWidth % compression)) / compression;
-    // This always returnin ~50 for some reason
-    console.log('compressedWidth', compressedWidth);
-    // const compressedHeight = gifHeight % heightCompression === 0 ? gifHeight / heightCompression : Math.floor(gifHeight / heightCompression) + 1;
     const compressedHeight = (gifHeight - (gifHeight % compression)) / compression;
+
     this.myObject.compressedWidth = compressedWidth;
     this.myObject.compressedHeight = compressedHeight;
-
     this.myObject.widthCompression = compression;
     this.myObject.heightCompression = compression;
 
@@ -498,7 +491,6 @@ export class CompressionTransform extends Transform {
 
   _transform(chunk, encoding, callback) {
     const {width: _gifWidth, height: _gifHeight, widthCompression, heightCompression} = this.gifObject;
-    // console.log('widthCompression', widthCompression);
     const pixelSize = widthCompression;
     const pixelSizeHeight = heightCompression;
     
@@ -531,8 +523,7 @@ export class AsciiTransform extends Transform {
   }
 
   _transform(chunk, encoding, callback) {
-    const {compressedWidth, widthCompression} = this.gifObject;
-    // console.log('compressedWidth', compressedWidth);
+    const {compressedWidth} = this.gifObject;
     const rows = [];
     let rowString = '';
     for (let i = 0; i < chunk.length; i++) {
