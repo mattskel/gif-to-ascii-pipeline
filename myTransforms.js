@@ -26,13 +26,16 @@ export class HeaderTransform extends Transform {
     const gifHeight = chunk.readUInt16LE(8);
     this.myObject.height = gifHeight;
 
-    const {widthCompression, heightCompression} = this.myObject;
-    // const compressedWidth = gifWidth % widthCompression === 0 ? gifWidth / widthCompression : Math.floor(gifWidth / widthCompression) + 1;
-    const compressedWidth = (gifWidth - (gifWidth % widthCompression)) / widthCompression;
-    // const compressedHeight = gifHeight % heightCompression === 0 ? gifHeight / heightCompression : Math.floor(gifHeight / heightCompression) + 1;
-    const compressedHeight = (gifHeight - (gifHeight % heightCompression)) / heightCompression;
+    const characterSize = 5.75;
+    const viewWidth = 400;
+    const compression = Math.floor(characterSize * gifWidth / viewWidth);
+    const compressedWidth = (gifWidth - (gifWidth % compression)) / compression;
+    const compressedHeight = (gifHeight - (gifHeight % compression)) / compression;
+
     this.myObject.compressedWidth = compressedWidth;
     this.myObject.compressedHeight = compressedHeight;
+    this.myObject.widthCompression = compression;
+    this.myObject.heightCompression = compression;
 
     const gifField = chunk.readUInt8(10);
     const colorTableStart = 10;
@@ -520,7 +523,7 @@ export class AsciiTransform extends Transform {
   }
 
   _transform(chunk, encoding, callback) {
-    const {compressedWidth, widthCompression} = this.gifObject;
+    const {compressedWidth} = this.gifObject;
     const rows = [];
     let rowString = '';
     for (let i = 0; i < chunk.length; i++) {
