@@ -23,14 +23,11 @@ app.get('/submit', (req, res) => {
     .then((response) => {
       if (response.status !== 200) {
         // Something went wrong
+        res.status(500).send({ error: 'Somethign went wrong' })
+        res.end();
+        return;
       }
       const {data} = response.data;
-
-      /**
-       * TODO: Fix bad ids
-       * jxzEhHBMmH7tm
-       * 1GoHMc7DyBqQE
-       */
       const {id} = data[Math.floor(Math.random() * Math.min(data.length, limit))];
       console.log(id);
       myTransform(`https://media.giphy.com/media/${id}/giphy.gif`, res, io)

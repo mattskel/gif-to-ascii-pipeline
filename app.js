@@ -1,15 +1,21 @@
 import {get} from 'https';
 import { 
-  HeaderTransform, 
-  FrameHeaderTransform, 
-  FrameImageTransform, 
+  // HeaderTransform, 
+  // FrameHeaderTransform, 
+  // FrameImageTransform, 
+  // GreyScaleTransform,
   GreyScaleTransform,
   CompressionTransform,
   AsciiTransform,
   PulseTransform,
-  ColorTransform,
   CanvasTransform,
 } from './myTransforms.js';
+import {
+  HeaderTransform, 
+  FrameHeaderTransform, 
+  FrameImageTransform, 
+  ColorTransform,
+} from './lwzTransforms.js';
 import { pipeline } from 'stream';
 
 function myTransform(url, _res, io) {
