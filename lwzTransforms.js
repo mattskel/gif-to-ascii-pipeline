@@ -23,8 +23,8 @@ export class HeaderTransform extends Transform {
     const gifHeight = chunk.readUInt16LE(8);
     this.myObject.height = gifHeight;
 
-    const characterSize = 5.75;
-    const viewWidth = 400;
+    const characterSize = 6;
+    const viewWidth = 360;
     const compression = Math.floor(characterSize * gifWidth / viewWidth);
     const compressedWidth = (gifWidth - (gifWidth % compression)) / compression;
     const compressedHeight = (gifHeight - (gifHeight % compression)) / compression;
