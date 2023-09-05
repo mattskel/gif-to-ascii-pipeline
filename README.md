@@ -1,6 +1,6 @@
 # gif-to-ascii-pipeline
 
-Converts a gif into ascii characters. Go [here](http://170.64.191.104:3000/) and search for a gif. Then see the gif as ascii characters.
+Converts a gif into animated ascii characters. Go [here](http://170.64.191.104:3000/) and search for a gif. Then see the gif as ascii characters.
 
 ### Why?
 I wanted a way to parse video/animation files and manipulate individual frames in real time. Node streams were a logical interface choice. I needed access to a test set of videos/animations and .gifs seemed like a good place to start. The file sizes are relatively small and there are large online resources such as [Giphy](https://giphy.com/)
