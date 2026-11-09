@@ -15,7 +15,7 @@ import {
   FrameHeaderTransform, 
   FrameImageTransform, 
   ColorTransform,
-} from './lwzTransforms.js';
+} from './lzwTransforms.js';
 import { pipeline } from 'stream';
 
 function myTransform(url, _res, io) {

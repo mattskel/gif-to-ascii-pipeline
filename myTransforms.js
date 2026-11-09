@@ -1,5 +1,5 @@
 import { Transform } from 'stream';
-import { createCanvas, createImageData, Image } from 'canvas';
+import { createCanvas, createImageData } from 'canvas';
 
 const asciiScale = ' .,:;irsXA253hMHGS#9B&@';
 

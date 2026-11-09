@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Socket.IO chat</title>
+    <title>GIF to ASCII</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <style>
       body {
@@ -56,7 +56,7 @@
     <div class="container">
       <h3>Convert a gif to ascii characters</h3>
       <p>The following parses a .gif file using node streams</p>
-      <p>Each frame in the .gif is decompressed using the the LWZ algorithm. Every pixel is converted to greyscale and then assigned an ascii character.</p>
+      <p>Each frame in the .gif is decompressed using the the LZW algorithm. Every pixel is converted to greyscale and then assigned an ascii character.</p>
       <p>The frames are then rendered as an ascii representation of the original .gif. For comparison, the original colour frames are rendered also</p>
       <p>The animations are synced for comparison</p>
       <form id="gifForm" class="form-container">

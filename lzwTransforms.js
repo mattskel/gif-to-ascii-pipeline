@@ -261,7 +261,7 @@ export class FrameHeaderTransform extends Transform {
         this.identifier = buffer[index++];
       }
 
-      // LWZ image
+      // LZW image
       if (this.identifier === 0x2c) {
         const blockSize = 9;
         if (buffer.length - index < blockSize) {
