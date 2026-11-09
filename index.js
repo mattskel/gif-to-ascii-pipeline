@@ -28,9 +28,19 @@ app.get('/submit', (req, res) => {
         return;
       }
       const {data} = response.data;
+      if (!Array.isArray(data) || data.length === 0) {
+        res.status(404).send({ error: 'No gifs found' });
+        return;
+      }
       const {id} = data[Math.floor(Math.random() * Math.min(data.length, limit))];
       console.log(id);
       myTransform(`https://media.giphy.com/media/${id}/giphy.gif`, res, io)
+    })
+    .catch((err) => {
+      console.log('Giphy request failed:', err.message);
+      if (!res.headersSent) {
+        res.status(502).send({ error: 'Could not reach Giphy' });
+      }
     });
 
 })
