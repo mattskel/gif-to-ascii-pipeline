@@ -297,7 +297,6 @@ export class FrameHeaderTransform extends Transform {
           const flags = buffer[index++];
           this.localColorTableFlags = flags.toString(2).padStart(8, '0')
           this.hasLocalColorTable = this.localColorTableFlags[0] === '1';
-	        // this.myObject.interlacedImage = this.localColorTableFlags[1] === '1';
           this.myObject.interlaceFlags.push({
             interlaced: this.localColorTableFlags[1] === '1',
             width,
@@ -376,19 +375,15 @@ export class FrameHeaderTransform extends Transform {
            */
           this.push(_buffer);
         }
-
-
       }
 
       if (index > buffer.length) {
         callback();
         return;
       }
-      
     }
 
     callback();
-
   }
 }
 

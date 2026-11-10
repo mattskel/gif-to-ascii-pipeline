@@ -1,9 +1,5 @@
 import {get} from 'https';
-import { 
-  // HeaderTransform, 
-  // FrameHeaderTransform, 
-  // FrameImageTransform, 
-  // GreyScaleTransform,
+import {
   GreyScaleTransform,
   CompressionTransform,
   AsciiTransform,
