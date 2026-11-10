@@ -132,6 +132,7 @@ export class FrameHeaderTransform extends Transform {
   _transform(chunk, encoding, callback) {
     let index = 0;
     const buffer = Buffer.concat([this.previousTail, chunk]);
+    this.previousTail = Buffer.alloc(0);
     if (buffer.length < 1) {
       callback();
       return;
@@ -162,14 +163,23 @@ export class FrameHeaderTransform extends Transform {
 
         // 0xf9 Graphic Control Extension
         if (this.subType === 0xf9) {
-          let subBlockLength;
-          if (buffer.length - index < subBlockLength) {
+          // let subBlockLength;
+          if (buffer.length - index < 1) {
             this.previousTail = buffer.slice(index);
             callback();
             return;
           }
 
-          subBlockLength = buffer[index++];
+          // Peek at the size without consuming
+          const subBlockLength = buffer[index];
+          // size byte + data + terminator
+          if (buffer.length - index < 1 + subBlockLength + 1) {
+            this.previousTail = buffer.slice(index);
+            callback();
+            return;
+          }
+
+          index++;
           if (subBlockLength !== 0x04) {
             throw new Error('Invalid metadata block');
           }
