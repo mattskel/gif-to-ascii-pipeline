@@ -433,9 +433,11 @@ export class FrameImageTransform extends Transform {
     if (subBlockLength !== 0) {
       const subBlock = chunk;
       let subIndex = 0;
-      while (subIndex < subBlockLength) {
+      readBytes: while (subIndex < subBlockLength) {
         binString = subBlock[subIndex++].toString(2).padStart(8, '0') + binString;
-        if (binString.length >= currentCodeSize) {
+        // Codes shorter than 8 bits (palettes of 64 colours or fewer) can fit
+        // more than one code in a byte, so read every complete code available
+        while (binString.length >= currentCodeSize) {
           let _tmp = binString.slice(-currentCodeSize);
           
           code = parseInt(_tmp, 2);
@@ -454,7 +456,8 @@ export class FrameImageTransform extends Transform {
             prev_code = undefined;
             continue;
           } else if ( code === eoi_code) {
-            break;
+            // End of image: stop reading entirely, not just this inner loop
+            break readBytes;
           } else if (code_table[code] !== undefined) {
             // output goes here
             indexStream.push(...code_table[code]);
