@@ -150,6 +150,13 @@ export class FrameHeaderTransform extends Transform {
         return;
       }
 
+      // Anything other than an extension or image block is unreadable.
+      // Without this, index never advances and the while loop spins forever.
+      if (this.identifier !== 0x21 && this.identifier !== 0x2c) {
+        callback(new Error(`Unknown block 0x${this.identifier.toString(16)} at offset ${index - 1} in the current chunk`));
+        return;
+      }
+
       // 0x21 Meta data identifier
       if (this.identifier === 0x21) {
         if (buffer.length - index < 1) {
