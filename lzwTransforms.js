@@ -184,7 +184,8 @@ export class FrameHeaderTransform extends Transform {
           const options = buffer[index++];
 
           const delayTime = buffer[index++] | (buffer[index++] << 8);
-          this.myObject.delayTimes.push(delayTime);
+          // Browsers treat delays of 0 or 1 (<= 10ms) as 100ms
+          this.myObject.delayTimes.push(delayTime <= 1 ? 10 : delayTime);
           const transparentColor = buffer[index++];
           this.myObject.transparentColors.push(transparentColor);
           const terminator = buffer[index++];
@@ -279,6 +280,12 @@ export class FrameHeaderTransform extends Transform {
           const flags = buffer[index++];
           this.localColorTableFlags = flags.toString(2).padStart(8, '0')
           this.hasLocalColorTable = this.localColorTableFlags[0] === '1';
+	        // this.myObject.interlacedImage = this.localColorTableFlags[1] === '1';
+          this.myObject.interlaceFlags.push({
+            interlaced: this.localColorTableFlags[1] === '1',
+            width,
+            height
+          })
         }
 
         // TODO Add the local color table info
@@ -368,6 +375,19 @@ export class FrameHeaderTransform extends Transform {
   }
 }
 
+function deinterlace(indicies, width, height) {
+  const out = Buffer.alloc(indicies.length);
+  let storedRow = 0;
+  for (const [start, step] of [[0, 8], [4, 8], [2, 4], [1, 2]]) {
+    for (let y = start; y < height; y += step) {
+      indicies.copy(out, y * width, storedRow * width, (storedRow + 1) * width);
+      storedRow++;
+    }
+  }
+
+  return out;
+}
+
 export class FrameImageTransform extends Transform {
   constructor(myObject, options) {
     super(options);
@@ -447,7 +467,11 @@ export class FrameImageTransform extends Transform {
       }
 
       // Get the _buffer length before pushing
-      const frameBuffer = Buffer.from(indexStream)
+      let frameBuffer = Buffer.from(indexStream);
+      const { interlaced, width, height } = this.myObject.interlaceFlags.shift();
+      if (interlaced) {
+        frameBuffer = deinterlace(frameBuffer, width, height)
+      }
       this.myObject.frameBufferImageLengths.push(frameBuffer.length);
       this.push(frameBuffer);
       callback();

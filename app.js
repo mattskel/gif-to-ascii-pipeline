@@ -30,6 +30,7 @@ function myTransform(url, _res, io) {
     myObject.transparentColors = [];
     myObject.comments = [];
     myObject.localColorTables = [];
+    myObject.interlaceFlags = [];
 
     const frameStream = pipeline(
       res,  
