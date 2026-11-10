@@ -37,7 +37,7 @@
       .ascii-container {
         font-size: 0.5em;
         line-height: 0.66em;
-        white-space: pre-line;
+        white-space: pre;
         /* max-width: 360px; */
       }
 
@@ -83,7 +83,7 @@
       function loopAnimation(frames, delays) {
         var i = 0;
         var loop = function() {
-          textArea.innerHTML = frames[i];
+          textArea.textContent = frames[i];
           const url = colorUrls[i];
           if (url) {
             imgElement.src = url;
@@ -145,7 +145,7 @@
 
       socket.on('asciiFrame', (frame) => {
         frames.push(frame);
-        textArea.innerHTML = frame;
+        textArea.textContent = frame;
       });
 
       socket.on('colorFrame', (url) => {
