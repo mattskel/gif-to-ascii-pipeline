@@ -143,11 +143,17 @@
       socket.on('asciiFrame', (frame) => {
         frames.push(frame);
         textArea.textContent = frame;
+        const url = colorUrls[frames.length - 1];
+        if (url) {
+          imgElement.src = url;
+        }
       });
 
       socket.on('colorFrame', (url) => {
         colorUrls.push(url);
-        imgElement.src = url;
+        if (colorUrls.length === frames.length) {
+          imgElement.src = url;
+        }
       });
     </script>
   </body>

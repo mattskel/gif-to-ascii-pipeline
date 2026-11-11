@@ -170,7 +170,6 @@ export class FrameHeaderTransform extends Transform {
 
         // 0xf9 Graphic Control Extension
         if (this.subType === 0xf9) {
-          // let subBlockLength;
           if (buffer.length - index < 1) {
             this.previousTail = buffer.slice(index);
             callback();
@@ -217,17 +216,16 @@ export class FrameHeaderTransform extends Transform {
             return;
           }
 
-          let subBlockLength = buffer[index++];
-          while (subBlockLength !== 0x00 && buffer.length - index >= subBlockLength) {
-            index += subBlockLength;
-            subBlockLength = buffer[index++];
+          while (index < buffer.length && buffer[index] !== 0x00 && buffer.length - index - 1 >= buffer[index]) {
+            index += buffer[index] + 1;
           }
 
-          if (subBlockLength !== 0x00) {
+          if (index >= buffer.length || buffer[index] !== 0x00) {
             this.previousTail = buffer.slice(index);
             callback();
             return;
           }
+          index++;
 
         } else if (this.subType === 0xfe) {
           // 0xfe Comment Extension
