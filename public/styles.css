@@ -1,0 +1,45 @@
+
+body {
+  font-family: "Courier New", Courier, monospace;
+  white-space: pre-wrap;
+  background: black;
+  color: white;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  max-width: 400px;
+  width: auto;
+  padding: 10px
+}
+
+.form-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.field-container {
+  display: flex;
+}
+
+.error-message {
+  color: red;
+}
+
+.ascii-container {
+  font-size: 0.5em;
+  line-height: 0.66em;
+  white-space: pre;
+}
+
+img.gif {
+  max-width: 400px;
+  width: auto;
+}
+
+#image {
+  width: inherit;
+}
+
+
