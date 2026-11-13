@@ -11,6 +11,8 @@ const server = http.createServer(app);
 const __dirname = path.resolve();
 const io = new Server(server);
 
+app.use(express.static('public'));
+
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/index.html');
 });
@@ -33,7 +35,6 @@ app.get('/submit', (req, res) => {
         return;
       }
       const {id} = data[Math.floor(Math.random() * Math.min(data.length, limit))];
-      console.log(id);
       myTransform(`https://media.giphy.com/media/${id}/giphy.gif`, res, io)
     })
     .catch((err) => {
@@ -45,6 +46,6 @@ app.get('/submit', (req, res) => {
 
 })
 
-server.listen(3000, () => {
+server.listen(process.env.port || 3000, () => {
   console.log('listening on *:3000');
 });
